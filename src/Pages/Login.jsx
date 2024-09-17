@@ -1,44 +1,33 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./login.css";
 import logo from "../assets/img/logo3.jpg";
+import { useState } from "react";
+import { axiosInstance } from "../Utils/axiosInstance";
+import { URLS } from "../Constants";
+import { Alert } from "react-bootstrap";
 
 const Login = () => {
+  const navigate = useNavigate();
+  const [login, setLogin] = useState({ email: "", password: "" });
+  const [error, setError] = useState(""); // State for error message
+
   const showHide = () => {
     const pass = document.getElementById("pass");
-    if (pass.type === "password") {
-      pass.type = "text";
-    } else {
-      pass.type = "password";
-    }
+    pass.type = pass.type === "password" ? "text" : "password";
   };
 
-  const loginForm = () => {
-    // Display the thank you message
-
-    const email = document.getElementById("email").value;
-    const pass = document.getElementById("pass").value;
-
-    const msgClass = document.getElementsByClassName("msg")[0];
-
-    //checks for above data
-    if (!email || !pass) {
-      msgClass.innerHTML = "please the credentials ";
-      msgClass.style.color = "red";
-
-      return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(""); // Clear error before new attempt
+    try {
+      const { data } = await axiosInstance.post(`${URLS.USERS}/login`, login);
+      if (data?.data) {
+        navigate("/"); // Navigate on successful login
+      }
+    } catch (e) {
+      const errMsg = e?.response?.data?.msg || "Something went wrong";
+      setError(errMsg); // Set the error message in state
     }
-
-    // If all checks are correct then display success message
-    msgClass.innerHTML = "Logged in Successfuly";
-    msgClass.style.color = "green";
-
-    // Hide the thank you message after 4 seconds
-    setTimeout(() => {
-      msgClass.innerHTML = "";
-    }, 4000);
-
-    //clearing the form after fillup
-    document.getElementById("form").reset();
   };
 
   return (
@@ -49,8 +38,7 @@ const Login = () => {
             <div className="col-lg-6 col-md-8">
               <div className="card shadow-sm">
                 <div className="card-body">
-                  {/* form start */}
-                  <form className="form">
+                  <form className="form" onSubmit={handleSubmit}>
                     <div className="row login flex-md-row ms-md-3">
                       <div className="col-md-3">
                         <img className="img-logo" src={logo} alt="logo" />
@@ -58,7 +46,15 @@ const Login = () => {
                       <div className="col-md-9">
                         <h2 className="ms-md-5 mb-4">Login</h2>
                       </div>
+
+                      {/* Display the Alert component below the heading */}
+                      {error && (
+                        <Alert variant="danger" className="mt-2">
+                          {error}
+                        </Alert>
+                      )}
                     </div>
+
                     <div className="mb-3">
                       <input
                         type="email"
@@ -66,8 +62,14 @@ const Login = () => {
                         id="email"
                         aria-describedby="emailHelp"
                         placeholder="Email"
+                        value={login.email}
+                        onChange={(e) =>
+                          setLogin((prevState) => ({
+                            ...prevState,
+                            email: e.target.value,
+                          }))
+                        }
                       />
-                      <div id="emailHelp" className="form-text" />
                     </div>
                     <div className="mb-3">
                       <input
@@ -75,6 +77,13 @@ const Login = () => {
                         className="form-control"
                         id="pass"
                         placeholder="Password"
+                        value={login.password}
+                        onChange={(e) =>
+                          setLogin((prevState) => ({
+                            ...prevState,
+                            password: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div className="mb-3 form-check">
@@ -94,13 +103,13 @@ const Login = () => {
 
                     <div className="text-center">
                       <button
-                        onClick={loginForm}
-                        type="button"
-                        className="btn py-2 btn-primary"
+                        type="submit"
+                        className="btn py-2 btn-primary submit-btn"
                       >
-                        Sign In
+                        Submit
                       </button>
                     </div>
+
                     <div>
                       <p className="text-center mt-2">
                         Forgot{" "}
@@ -123,9 +132,7 @@ const Login = () => {
                         </Link>
                       </p>
                     </div>
-                    <div className="msg" />
                   </form>
-                  {/* form end */}
                 </div>
               </div>
             </div>
