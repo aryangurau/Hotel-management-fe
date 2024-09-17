@@ -46,7 +46,6 @@ const Login = () => {
                       <div className="col-md-9">
                         <h2 className="ms-md-5 mb-4">Login</h2>
                       </div>
-
                       {/* Display the Alert component below the heading */}
                       {error && (
                         <Alert variant="danger" className="mt-2">
