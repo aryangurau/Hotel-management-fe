@@ -2,6 +2,8 @@ import {  Nav, Navbar } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { LuLogIn } from "react-icons/lu";
 import logo from "../assets/img/logo3.jpg"
+import icon from "../assets/img/signup.gif"
+import icon2 from "../assets/img/login.gif"
 const UserNavbar = () => {
   return (
     <div>
@@ -27,11 +29,11 @@ const UserNavbar = () => {
             </Nav>
           <button>
           <Link to="/login" className="nav-link mx-2 p-2">
-                login <LuLogIn />
+          <img src={icon2} width={30} height={30} alt="" />      login <LuLogIn />
               </Link>
               </button>
             <button>  <Link to="/signup" className="nav-link p-2">
-                Sign up 
+                Sign up <img src={icon} width={30} height={30} alt="" />
               </Link>
               </button>
               </Navbar.Collapse>
