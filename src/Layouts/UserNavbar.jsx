@@ -1,6 +1,7 @@
 import {  Nav, Navbar } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { LuLogIn } from "react-icons/lu";
+import logo from "../assets/img/logo3.jpg"
 const UserNavbar = () => {
   return (
     <div>
@@ -8,7 +9,7 @@ const UserNavbar = () => {
       <Navbar expand="lg" className="bg-primary text-white " variant="dark">
         <div className="container d-flex justify-content-center">
           <Link to="/" className="navbar-brand">
-            XYZ hotel
+           <img src={logo} width={30} height={30} alt="" /> XYZ hotel
           </Link>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
