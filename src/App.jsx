@@ -9,14 +9,14 @@ function App() {
   return (
     <>
       <Routes>
-       
-  
-      <Route path="/login" element={<Login />} />
-        <Route path="/forget-password" element={<ForgetPassword/>} />
-        <Route path="/forget-password" element={<Signup/>} />
-        
-        <Route path="/" element={<UserLayout/>}>
-        <Route index element={<Home/>} />
+        {/* Separate routes for login, forget password, and signup */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/forget-password" element={<ForgetPassword />} />
+        <Route path="/signup" element={<Signup />} />
+
+        {/* Nested route for the home page inside UserLayout */}
+        <Route path="/" element={<UserLayout />}>
+          <Route index element={<Home />} />
         </Route>
       </Routes>
     </>
