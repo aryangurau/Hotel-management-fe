@@ -6,6 +6,9 @@ import { Alert } from "react-bootstrap";
 import { isLoggedIn } from "../Utils/login";
 // import "./register.css";
 import logo from "../assets/img/logo3.jpg";
+import banner from "../../public/hotelbanner.jpg";
+import banner2 from "../../public/hotelbanner2.jpg";
+import banner3 from "../../public/hotelbanner3.jpg";
 
 const Register = () => {
   const registerRef = useRef();
@@ -23,7 +26,7 @@ const Register = () => {
       repeatPass.type = "password";
     }
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(""); // Clear error before new attempt
@@ -31,7 +34,6 @@ const Register = () => {
       const rawFormData = registerRef.current;
       const formData = new FormData(rawFormData);
       formData.delete("confirmPassword");
-
       const { data } = await axiosInstance.post(
         `${URLS.USERS}/register`,
         formData
@@ -42,7 +44,6 @@ const Register = () => {
       setError(errMsg); // Set the error message in state
     }
   };
-
   useEffect(() => {
     if (isLoggedIn()) {
       navigate("/");
@@ -54,6 +55,102 @@ const Register = () => {
       <section className="d-flex justify-content-center align-items-center min-vh-100">
         <div className="container">
           <div className="row justify-content-center">
+            <div className="col-lg-6 col-md-8">
+              <div className="card-body">
+                <div id="carouselExampleCaptions" className="carousel slide ">
+                  <div className="carousel-indicators">
+                    <button
+                      type="button"
+                      data-bs-target="#carouselExampleCaptions"
+                      data-bs-slide-to={0}
+                      className="active"
+                      aria-current="true"
+                      aria-label="Slide 1"
+                    />
+                    <button
+                      type="button"
+                      data-bs-target="#carouselExampleCaptions"
+                      data-bs-slide-to={1}
+                      aria-label="Slide 2"
+                    />
+                    <button
+                      type="button"
+                      data-bs-target="#carouselExampleCaptions"
+                      data-bs-slide-to={2}
+                      aria-label="Slide 3"
+                    />
+                  </div>
+                  <div className="carousel-inner">
+                    <div className="carousel-item active">
+                      <img
+                        src={banner}
+                        style={{ width: "700px", height: "630px" }}
+                        className=" "
+                        alt="..."
+                      />
+                      <div className="carousel-caption d-none d-md-block">
+                        <h5 >Explore Our Hotels</h5>
+                        <p>
+                         We provide best quality services
+                        </p>
+                      </div>
+                    </div>
+                    <div className="carousel-item">
+                      <img
+                        src={banner2}
+                        style={{ width: "700px", height: "630px" }}
+                        className="d-block "
+                        alt="..."
+                      />
+                      <div className="carousel-caption d-none d-md-block">
+                      <h5 >Explore Our Hotels</h5>
+                        <p>
+                         We provide best quality services
+                        </p>
+                      </div>
+                    </div>
+                    <div className="carousel-item">
+                      <img
+                        src={banner3}
+                        style={{ width: "700px", height: "630px" }}
+                        className="d-block w-100"
+                        alt="..."
+                      />
+                      <div className="carousel-caption d-none d-md-block">
+                      <h5 >Explore Our Hotels</h5>
+                        <p>
+                         We provide best quality services
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    className="carousel-control-prev"
+                    type="button"
+                    data-bs-target="#carouselExampleCaptions"
+                    data-bs-slide="prev"
+                  >
+                    <span
+                      className="carousel-control-prev-icon"
+                      aria-hidden="true"
+                    />
+                    <span className="visually-hidden">Previous</span>
+                  </button>
+                  <button
+                    className="carousel-control-next"
+                    type="button"
+                    data-bs-target="#carouselExampleCaptions"
+                    data-bs-slide="next"
+                  >
+                    <span
+                      className="carousel-control-next-icon"
+                      aria-hidden="true"
+                    />
+                    <span className="visually-hidden">Next</span>
+                  </button>
+                </div>
+              </div>
+            </div>
             <div className="col-lg-6 col-md-8">
               <div className="card shadow-sm">
                 <div className="card-body">

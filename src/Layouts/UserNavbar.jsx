@@ -23,7 +23,7 @@ const UserNavbar = () => {
   return (
     <div>
       {/* Nav bar */}
-      <Navbar expand="lg" className="bg-primary text-white " variant="dark">
+      <Navbar expand="lg" className="bg-primary text-white " style={{"background-color":" #003B95"}} >
         <div className="container d-flex justify-content-center">
           <Link to="/" className="navbar-brand">
             <img src={logo} width={30} height={30} alt="" /> XYZ hotel
