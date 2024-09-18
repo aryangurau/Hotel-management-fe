@@ -3,7 +3,7 @@ import Login from "./Pages/Login";
 import UserLayout from "./Layouts/UserLayout";
 import Home from "./Pages/Home";
 import ForgetPassword from "./Pages/ForgetPassword";
-import Signup from "./Pages/Signup";
+import Register from "./Pages/Register";
 
 function App() {
   return (
@@ -12,7 +12,7 @@ function App() {
         {/* Separate routes for login, forget password, and signup */}
         <Route path="/login" element={<Login />} />
         <Route path="/forget-password" element={<ForgetPassword />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/register" element={<Register/>} />
 
         {/* Nested route for the home page inside UserLayout */}
         <Route path="/" element={<UserLayout />}>
