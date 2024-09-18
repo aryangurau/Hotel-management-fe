@@ -1,10 +1,17 @@
+import { useState, useEffect } from "react";
+import { Alert } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
-import "./login.css";
-import logo from "../assets/img/logo3.jpg";
-import { useState } from "react";
+
 import { axiosInstance } from "../Utils/axiosInstance";
 import { URLS } from "../Constants";
-import { Alert } from "react-bootstrap";
+import { setToken } from "../Utils/session";
+import { isLoggedIn, setLoggedInUser } from "../Utils/login";
+import "./login.css";
+import logo from "../assets/img/logo3.jpg";
+
+
+
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -12,8 +19,12 @@ const Login = () => {
   const [error, setError] = useState(""); // State for error message
 
   const showHide = () => {
-    const pass = document.getElementById("pass");
-    pass.type = pass.type === "password" ? "text" : "password";
+    const currentPw = document.getElementById("myPassword");
+    if (currentPw.type === "password") {
+      currentPw.type = "text";
+    } else {
+      currentPw.type = "password";
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -22,6 +33,8 @@ const Login = () => {
     try {
       const { data } = await axiosInstance.post(`${URLS.USERS}/login`, login);
       if (data?.data) {
+        setToken(data.data);  //for local storage of jwt token of loggedin user
+        setLoggedInUser();   //for local storage of user information
         navigate("/"); // Navigate on successful login
       }
     } catch (e) {
@@ -29,7 +42,11 @@ const Login = () => {
       setError(errMsg); // Set the error message in state
     }
   };
-
+  useEffect(() => {
+    if (isLoggedIn()) {
+      navigate("/");
+    }
+  }, [navigate]);
   return (
     <>
       <section className="main d-flex align-items-center justify-content-center">
@@ -38,7 +55,7 @@ const Login = () => {
             <div className="col-lg-6 col-md-8">
               <div className="card shadow-sm">
                 <div className="card-body">
-                  <form className="form" onSubmit={handleSubmit}>
+                  <form className="form" onSubmit={(e)=>handleSubmit(e)}>
                     <div className="row login flex-md-row ms-md-3">
                       <div className="col-md-3">
                         <img className="img-logo" src={logo} alt="logo" />
@@ -74,7 +91,8 @@ const Login = () => {
                       <input
                         type="password"
                         className="form-control"
-                        id="pass"
+                        id="myPassword"
+                      
                         placeholder="Password"
                         value={login.password}
                         onChange={(e) =>
@@ -125,9 +143,9 @@ const Login = () => {
                         Don&apos;t have an account?{" "}
                         <Link
                           className="link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
-                          to="/signup"
+                          to="/register"
                         >
-                          Sign Up
+                          Register
                         </Link>
                       </p>
                     </div>
