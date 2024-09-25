@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { axiosInstance } from "../Utils/axiosInstance";
 import { URLS } from "../Constants";
-import { Alert } from "react-bootstrap";
-import { isLoggedIn } from "../Utils/login";
+import { Alert, Spinner } from "react-bootstrap";
+// import { isLoggedIn } from "../Utils/login";
 // import "./register.css";
 import logo from "../assets/img/logo3.jpg";
 import banner from "../../public/hotelbanner.jpg";
@@ -13,7 +13,11 @@ import banner3 from "../../public/hotelbanner3.jpg";
 const Register = () => {
   const registerRef = useRef();
   const navigate = useNavigate();
+  const [submitDisabled, setSubmitDisabled] = useState(false);
   const [error, setError] = useState(""); // State for error message
+  const [validPw, setValidPw] = useState(true);
+  const [validEmail, setValidEmail] = useState(true);
+  const [email, setEmail] = useState({email:""});
 
   const showHide = () => {
     const pass = document.getElementById("pass");
@@ -30,25 +34,34 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(""); // Clear error before new attempt
+
     try {
       const rawFormData = registerRef.current;
       const formData = new FormData(rawFormData);
+      console.log({ formData });
       formData.delete("confirmPassword");
+      setSubmitDisabled(true);
       const { data } = await axiosInstance.post(
         `${URLS.USERS}/register`,
         formData
       );
       console.log({ data });
+
+      if (data.msg === "please check your email for verification") {
+        setSubmitDisabled(false);
+        navigate("/verify", { state: { email: formData.get("email") } });
+      }
     } catch (e) {
+      setSubmitDisabled(false);
       const errMsg = e?.response?.data?.msg || "Something went wrong";
       setError(errMsg); // Set the error message in state
     }
   };
-  useEffect(() => {
-    if (isLoggedIn()) {
-      navigate("/");
-    }
-  }, [navigate]);
+  // useEffect(() => {
+  //   if (isLoggedIn()) {
+  //     navigate("/");
+  //   }
+  // }, [navigate]);
 
   return (
     <>
@@ -89,10 +102,8 @@ const Register = () => {
                         alt="..."
                       />
                       <div className="carousel-caption d-none d-md-block">
-                        <h5 >Explore Our Hotels</h5>
-                        <p>
-                         We provide best quality services
-                        </p>
+                        <h5>Explore Our Hotels</h5>
+                        <p>We provide best quality services</p>
                       </div>
                     </div>
                     <div className="carousel-item">
@@ -103,10 +114,8 @@ const Register = () => {
                         alt="..."
                       />
                       <div className="carousel-caption d-none d-md-block">
-                      <h5 >Explore Our Hotels</h5>
-                        <p>
-                         We provide best quality services
-                        </p>
+                        <h5>Explore Our Hotels</h5>
+                        <p>We provide best quality services</p>
                       </div>
                     </div>
                     <div className="carousel-item">
@@ -117,10 +126,8 @@ const Register = () => {
                         alt="..."
                       />
                       <div className="carousel-caption d-none d-md-block">
-                      <h5 >Explore Our Hotels</h5>
-                        <p>
-                         We provide best quality services
-                        </p>
+                        <h5>Explore Our Hotels</h5>
+                        <p>We provide best quality services</p>
                       </div>
                     </div>
                   </div>
@@ -161,7 +168,7 @@ const Register = () => {
                   >
                     <div className="text-center mb-4">
                       <img className="img-logo" src={logo} alt="Logo" />
-                      <h2 className="mt-3">Register</h2>
+                      <h4 className="mt-3">Register</h4>
                       {/* Display the Alert component below the heading */}
                       {error && (
                         <Alert variant="danger" className="mt-2">
@@ -181,24 +188,71 @@ const Register = () => {
                     <div className="mb-1">
                       <input
                         type="email"
-                        className="form-control"
+                        className={`form-control ${
+                          validEmail ? "" : "is-invalid"
+                        }`}
                         id="email"
                         name="email"
                         placeholder="Enter email"
+                        value={email.email}
+                        onChange={(e) => {
+                          setValidEmail(true);
+                          setEmail((prev) => {
+                            return {
+                              ...prev,
+                              email: e.target.value,
+                            };
+                          });
+                        }}
+                        onBlur={(e) => {
+                          new RegExp(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/).test(
+                            e.target.value
+                          )
+                            ? setValidEmail(true)
+                            : setValidEmail(false);
+                        }}
                         required
                       />
+                      <div className="invalid-feedback">
+                        Please provide proper email
+                      </div>
                     </div>
 
                     <div className="mb-1">
                       <input
                         type="password"
-                        className="form-control"
+                        className={`form-control ${
+                          validPw ? "" : "is-invalid"
+                        }`}
                         id="pass"
                         name="password"
                         placeholder="Password"
                         autoComplete="off"
+
+
+                        onChange={() => {
+                          setValidPw(true);
+                        
+                        }}
+
+                        onBlur={(e) => {
+                          new RegExp(
+                            /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10}$/
+                          ).test(e.target.value)
+                            ? setValidPw(true)
+                            : setValidPw(false);
+                        }}
                         required
                       />
+                      <div className="invalid-feedback">
+                        password must contain
+                        <ul>
+                          <li>A capital letter</li>
+                          <li>A special character /@,!,*,%,$,#/</li>
+                          <li>A number</li>
+                        </ul>
+                        and 10 characters long
+                      </div>
                     </div>
 
                     <div className="mb-3">
@@ -242,7 +296,20 @@ const Register = () => {
                     </div>
 
                     <div className="text-center">
-                      <button type="submit" className="btn btn-primary w-100">
+                      <button
+                        // type="submit"
+                        className="btn btn-primary w-100"
+                        disabled={submitDisabled}
+                      >
+                        {" "}
+                        {submitDisabled && (
+                          <Spinner
+                            animation="border"
+                            variant="light"
+                            size="sm"
+                            className="mx-1"
+                          />
+                        )}
                         Register
                       </button>
                     </div>

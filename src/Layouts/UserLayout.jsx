@@ -8,6 +8,9 @@ const UserLayout = () => {
       <UserNavbar />
       <Outlet />
 
+
+
+
       <UserFooter />
     </>
   );

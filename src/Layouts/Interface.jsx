@@ -1,15 +1,16 @@
-import {  Button, ButtonGroup, Dropdown } from "react-bootstrap";
+import "../Layouts/css/interface.css";
+import { Nav, Navbar, Button, ButtonGroup, Dropdown } from "react-bootstrap";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import { LuLogIn } from "react-icons/lu";
 import logo from "../assets/img/logo3.jpg";
 // import icon from "../assets/img/signup.gif";
 import icon2 from "../assets/img/login.gif";
 import { getCurrentUser, removeAll } from "../Utils/session";
 import { isLoggedIn } from "../Utils/login";
-import "./css/nav.css" 
+import UserFooter from "./UserFooter";
 
-const UserNavbar = () => {
+const Interface = () => {
   const navigate = useNavigate();
   const loggedIn = isLoggedIn();
   const getUserInfo = () => {
@@ -20,10 +21,9 @@ const UserNavbar = () => {
     if (!name) return "";
     return name;
   };
-
   return (
     <div>
-      {/* Nav bar */}
+      <div>
         {/* top  start*/}
         <section className="container-fluid head-top">
           <div className="container top-con">
@@ -80,33 +80,29 @@ const UserNavbar = () => {
                             list your property
                           </a>
                         </li>
-                          {/* {loggedIn && getUserInfo() ? (  //ToDo
-                            <> </>): (<></>)} */}
                         <li className="nav-item">
                           <button className="btn ms-md-2 bg-primary text-dark register-login-btn">
-                           
-                        
                             <Link to="/register">Register</Link>
                           </button>
                         </li>
-                        <button className="rounded">
+                        <button className="text-dark bg-primry">
                           {loggedIn && getUserInfo() ? (
                             <>
                               <Dropdown  as={ButtonGroup}>
                                 <Button
-                                  style={{ padding:  "3px" }}
-                                  className="text-center bg-primary"
-                                 
+                                  style={{ padding: "5px 3px" }}
+                                  className="text-center bg-primary rounded"
+                                  variant="secondary"
                                   onClick={() => navigate("/admin/dashboard")}
                                 >
                                   Welcome {getUserInfo()}
                                 </Button>
-                                <Dropdown.Toggle className="bg-primary"
+                                <Dropdown.Toggle
                                   split
-                               
+                                  variant="secondary"
                                   id="dropdown-split-basic"
                                 />
-                                <Dropdown.Menu className="bg-primary">
+                                <Dropdown.Menu>
                                   <Dropdown.Item
                                     onClick={() => navigate("/admin/profile")}
                                   >
@@ -128,9 +124,6 @@ const UserNavbar = () => {
                                   </Dropdown.Item>
                                 </Dropdown.Menu>
                               </Dropdown>
-
-                           
-
                             </>
                           ) : (
                             <Link to="/login" className="nav-link mx-2 p-2">
@@ -240,75 +233,152 @@ const UserNavbar = () => {
         </div>
         {/* search end */}
 
-      {/* <Navbar expand="lg" className=" text-white " variant="dark" style={{"backgroundColor":" #003B95"}} >
-        <div className="container d-flex justify-content-center">
-          <Link to="/" className="navbar-brand">
-            <img src={logo} width={30} height={30} alt="" /> XYZ hotel
-          </Link>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
-          <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="ms-auto "  variant="" defaultActiveKey="/home">
-              <Link to="/" className="nav-link">
-                Home
-              </Link>
-              <Link to="/contact" className="nav-link">
-                Contact
-              </Link>
-              <Link to="/about" className="nav-link">
-                About
-              </Link>
-            </Nav>
-            <button>
-              {loggedIn && getUserInfo() ? (
-                <>
-                  <Dropdown as={ButtonGroup}>
-                    <Button
-                      variant="secondary"
-                      onClick={() => navigate("/admin/dashboard")}
-                    >
-                      Welcome {getUserInfo()}
-                    </Button>
-                    <Dropdown.Toggle
-                      split
-                      variant="secondary"
-                      id="dropdown-split-basic"
-                    />
-                    <Dropdown.Menu>
-                      <Dropdown.Item onClick={() => navigate("/admin/profile")}>
-                        My Profile
-                      </Dropdown.Item>
-                      <Dropdown.Item onClick={() => navigate("/admin/orders")}>
-                        My Orders
-                      </Dropdown.Item>
-                      <Dropdown.Divider />
-                      <Dropdown.Item
-                        onClick={() => {
-                          removeAll();
-                          navigate("/");
-                        }}
-                      >
-                        Log Out
-                      </Dropdown.Item>
-                    </Dropdown.Menu>
-                  </Dropdown>
-                </>
-              ) : (
-                <Link to="/login" className="nav-link mx-2 p-2">
-                  <img src={icon2} width={30} height={30} alt="" /> login{" "}
-                  <LuLogIn />
-                </Link>
-               
-                
-              )}
-            </button>
-          
-          </Navbar.Collapse>
-        </div>
         
-      </Navbar> */}
-      
+        <Outlet/>
+        {/* hotels card */}
+        {/* <div className="container con mt-5 pt-5">
+          <h2 className="text-dark fs-2 text-ms">Explore Hotels</h2>
+          <div className="row justify-content-center">
+            <div
+              className="card col-lg-3 col-md-5 shadow p-3 mb-5 bg-body-tertiary rounded"
+              style={{ width: "20rem" }}
+            >
+              <img
+                src="https://cf.bstatic.com/xdata/images/hotel/square600/522067066.jpg?k=7bce548c7382b551be6362393c59fdd4633c49ee400cf9dd4d52eb5f4ef98f89&o="
+                className="card-img-top"
+                alt="..."
+              />
+              <div className="card-body">
+                <p className="card-text">
+                  Some quick example text to build on the card title and make up
+                  the bulk of the card&apos;s content.
+                </p>
+              </div>
+            </div>
+            <div
+              className="card col-lg-3 col-md-5 shadow p-3 mb-5 bg-body-tertiary rounded"
+              style={{ width: "20rem" }}
+            >
+              <img
+                src="https://i.ytimg.com/vi/gsaLaYSizk8/maxresdefault.jpg"
+                className="card-img-top"
+                alt="..."
+              />
+              <div className="card-body">
+                <p className="card-text">
+                  Some quick example text to build on the card title and make up
+                  the bulk of the card&apos;s content.
+                </p>
+              </div>
+            </div>
+            <div
+              className="card col-lg-3 col-md-5 shadow p-3 mb-5 bg-body-tertiary rounded"
+              style={{ width: "20rem" }}
+            >
+              <img
+                src="https://cf.bstatic.com/xdata/images/hotel/square600/283374329.jpg?k=3ac15dffc1efe76b14ff3436242681ddc77e977bddd9b18b7f2283713334ca48&o="
+                className="card-img-top"
+                alt="..."
+              />
+              <div className="card-body">
+                <p className="card-text">
+                  Some quick example text to build on the card title and make up
+                  the bulk of the card&apos;s content.
+                </p>
+              </div>
+            </div>
+            <div
+              className="card col-lg-3 col-md-5 shadow p-3 mb-5 bg-body-tertiary rounded"
+              style={{ width: "20rem" }}
+            >
+              <img
+                src="https://r-xx.bstatic.com/xdata/images/hotel/263x210/100235855.jpeg?k=5b6e6cff16cfd290e953768d63ee15f633b56348238a705c45759aa3a81ba82b&o="
+                className="card-img-top"
+                alt="..."
+              />
+              <div className="card-body">
+                <p className="card-text">
+                  Some quick example text to build on the card title and make up
+                  the bulk of the card&apos;s content.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="container con mt-5 pt-5">
+          <h2 className="text-dark fs-2 text-ms">Explore Hotels</h2>
+          <div className="row justify-content-center">
+            <div
+              className="card col-lg-3 col-md-5 shadow p-3 mb-5 bg-body-tertiary rounded"
+              style={{ width: "20rem" }}
+            >
+              <img
+                src="https://cf.bstatic.com/xdata/images/hotel/square600/522067066.jpg?k=7bce548c7382b551be6362393c59fdd4633c49ee400cf9dd4d52eb5f4ef98f89&o="
+                className="card-img-top"
+                alt="..."
+              />
+              <div className="card-body">
+                <p className="card-text">
+                  Some quick example text to build on the card title and make up
+                  the bulk of the card&apos;s content.
+                </p>
+              </div>
+            </div>
+            <div
+              className="card col-lg-3 col-md-5 shadow p-3 mb-5 bg-body-tertiary rounded"
+              style={{ width: "20rem" }}
+            >
+              <img
+                src="https://i.ytimg.com/vi/gsaLaYSizk8/maxresdefault.jpg"
+                className="card-img-top"
+                alt="..."
+              />
+              <div className="card-body">
+                <p className="card-text">
+                  Some quick example text to build on the card title and make up
+                  the bulk of the card&apos;s content.
+                </p>
+              </div>
+            </div>
+            <div
+              className="card col-lg-3 col-md-5 shadow p-3 mb-5 bg-body-tertiary rounded"
+              style={{ width: "20rem" }}
+            >
+              <img
+                src="https://cf.bstatic.com/xdata/images/hotel/square600/283374329.jpg?k=3ac15dffc1efe76b14ff3436242681ddc77e977bddd9b18b7f2283713334ca48&o="
+                className="card-img-top"
+                alt="..."
+              />
+              <div className="card-body">
+                <p className="card-text">
+                  Some quick example text to build on the card title and make up
+                  the bulk of the card&apos;s content.
+                </p>
+              </div>
+            </div>
+            <div
+              className="card col-lg-3 col-md-5 shadow p-3 mb-5 bg-body-tertiary rounded"
+              style={{ width: "20rem" }}
+            >
+              <img
+                src="https://r-xx.bstatic.com/xdata/images/hotel/263x210/100235855.jpeg?k=5b6e6cff16cfd290e953768d63ee15f633b56348238a705c45759aa3a81ba82b&o="
+                className="card-img-top"
+                alt="..."
+              />
+              <div className="card-body">
+                <p className="card-text">
+                  Some quick example text to build on the card title and make up
+                  the bulk of the card&apos;s content.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div> */}
+        {/* hotels card end */}
+      </div>
+      <UserFooter />
     </div>
   );
 };
 
-export default UserNavbar;
+export default Interface;

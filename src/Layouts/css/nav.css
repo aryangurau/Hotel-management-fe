@@ -1,0 +1,110 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  /* body {
+    max-height: 96vh;
+  } */
+  .main{
+      max-width: 1280px;
+      margin: auto;
+  }
+  .head-top{
+      width: 100%;
+  }
+  .top-con {
+    background: #003b95;
+    position: relative;
+    width: 100%;
+  }
+  .navbar a {
+    color: white;
+    font-weight: 500;
+  }
+  h2 ,h1{
+   
+    color: #ece8e8;
+  }
+  h1{
+      font-weight:700;
+  }
+  h2 {
+      font-weight: 300;
+  }
+  .state {
+    width: 40px;
+    border-radius: 50%;
+  }
+  
+  .form{
+      width: 100%;
+    
+  }
+  
+  .form input{
+      border-radius:10px;
+      padding: 10px;
+      /* width: 100%; */
+     
+  }
+  .btn-search{
+      padding: 9px 25px;
+      border-radius:10px;
+      background: #065fc5;
+      color: white;
+      position: absolute;
+      top: 85px;
+  }
+ 
+  .search-section{
+      position: absolute;
+      top:255px;
+      left:89px;
+  }
+  @media (max-width: 480px) 
+  {
+      .search-section{
+          display: flex;
+          flex-direction: column;
+      position: absolute;
+        top:20px;
+        left: 2px ;
+        align-items: center;
+      }
+  }
+  
+  
+  @media (max-width: 1200px) 
+  {
+      .search-section{
+          display: flex;
+          flex-direction: column;
+      position: relative;
+        top:20px;
+        left: auto ;
+        margin-left: -1px;
+        align-items: center;
+      }
+  }
+
+  .card-img-top{
+    width: 100%;
+    min-height: 300px;
+    object-fit: cover;
+
+  }
+  .card{
+      border: none;
+  }
+   /* .card img{
+      width: 100%;
+      min-height: 300px;
+      object-fit: cover;
+   } */
+   .guest i{
+  position: absolute;
+  top: 39%;
+  left: 5%;
+  font-size:25px;
+   }
