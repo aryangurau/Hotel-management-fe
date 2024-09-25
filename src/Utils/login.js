@@ -26,3 +26,17 @@ export const setLoggedInUser = () => {
   const { name, email, roles } = jwtDecode(token);
   setCurrentUser({ name, email, roles });
 };
+export const isValidRole = (role = []) => {
+  // Check the token validity
+  const isValidLogin = isLoggedIn();
+  if (!isValidLogin) return false;
+  // check if there is no roles to check
+  if (role === "") return true;
+  // check user detail from token
+  const token = getToken();
+  const user = jwtDecode(token);
+  // compare the role from the token to that of the user sent
+  const isValidRole = role.some((r) => user.roles.includes(r));
+  if (!isValidRole) return false;
+  return true;
+};
