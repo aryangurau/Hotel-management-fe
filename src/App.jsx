@@ -14,6 +14,7 @@ import AdminUsers from "./Pages/admin/Users";
 import AdminOrders from "./Pages/admin/Orders";
 import AdminRooms from "./Pages/admin/Rooms";
 import AdminProfile from "./Pages/admin/Profile";
+import Booking from "./Pages/Booking";
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
         {/* Nested route for the home page inside UserLayout */}
         <Route path="/" element={<UserLayout />}>
           <Route index element={<Home />} />
+          <Route path="booking" element={<Booking />} />
         </Route>
 
 
