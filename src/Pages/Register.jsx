@@ -6,9 +6,9 @@ import { Alert, Spinner } from "react-bootstrap";
 // import { isLoggedIn } from "../Utils/login";
 // import "./register.css";
 import logo from "../assets/img/logo3.jpg";
-import banner from "../../public/hotelbanner.jpg";
-import banner2 from "../../public/hotelbanner2.jpg";
-import banner3 from "../../public/hotelbanner3.jpg";
+import banner from "../assets/img/hotelbanner.jpg";
+import banner2 from "../assets/img/hotelbanner2.jpg";
+import banner3 from "../assets/img/hotelbanner3.jpg";
 
 const Register = () => {
   const registerRef = useRef();

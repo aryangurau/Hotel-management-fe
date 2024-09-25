@@ -5,9 +5,9 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { axiosInstance } from "../Utils/axiosInstance";
 import { URLS } from "../Constants";
 
-import banner from "../../public/hotelbanner.jpg";
-import banner2 from "../../public/hotelbanner2.jpg";
-import banner3 from "../../public/hotelbanner3.jpg";
+import banner from "../assets/img/hotelbanner.jpg";
+import banner2 from "../assets/img/hotelbanner2.jpg";
+import banner3 from "../assets/img/hotelbanner3.jpg";
 import message from "../assets/img/message.gif";
 
 const VerifyFp = () => {

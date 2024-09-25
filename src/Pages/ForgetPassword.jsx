@@ -7,9 +7,9 @@ import { URLS } from "../Constants";
 
 import "./css/forgetpw.css"
 import "./login.css";
-import banner from "../../public/hotelbanner.jpg";
-import banner2 from "../../public/hotelbanner2.jpg";
-import banner3 from "../../public/hotelbanner3.jpg";
+import banner from "../assets/img/hotelbanner.jpg";
+import banner2 from "../assets/img/hotelbanner2.jpg";
+import banner3 from "../assets/img/hotelbanner3.jpg";
 import forgoticon from "../assets/img/forgot.png";
 
 const ForgetPassword = () => {

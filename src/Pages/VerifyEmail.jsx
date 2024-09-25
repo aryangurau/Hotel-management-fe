@@ -7,9 +7,9 @@ import { URLS } from "../Constants";
 
 // import "./register.css";
 import logo from "../assets/img/logo3.jpg";
-import banner from "../../public/hotelbanner.jpg";
-import banner2 from "../../public/hotelbanner2.jpg";
-import banner3 from "../../public/hotelbanner3.jpg";
+import banner from "../assets/img/hotelbanner.jpg";
+import banner2 from "../assets/img/hotelbanner2.jpg";
+import banner3 from "../assets/img/hotelbanner3.jpg";
 
 const VerifyEmail = () => {
   const { state } = useLocation();
