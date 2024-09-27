@@ -9,7 +9,11 @@ import { getCurrentUser, removeAll } from "../Utils/session";
 import { isLoggedIn } from "../Utils/login";
 import "./css/nav.css";
 
+import { ShoppingButton } from "../components/AddButton";
+import { useSelector } from "react-redux";
+
 const UserNavbar = () => {
+  const { quantity } = useSelector((state) => state.cart);
   const navigate = useNavigate();
   const loggedIn = isLoggedIn();
   const getUserInfo = () => {
@@ -42,9 +46,7 @@ const UserNavbar = () => {
               {/* navbar */}
               <nav className="navbar navbar-expand-lg">
                 <div className="container-fluid ms-auto d-flex align-items-start">
-                  <a className="navbar-brand" href="#">
-                    NPR
-                  </a>
+                  
                   <button
                     className="navbar-toggler"
                     type="button"
@@ -59,9 +61,9 @@ const UserNavbar = () => {
                     className="collapse navbar-collapse"
                     id="navbarNavDropdown"
                   >
-                    <ul className="navbar-nav">
+                    <ul className="navbar-nav mx-5">
                       <li className="nav-item">
-                        <a className="nav-link" aria-current="page" href="#">
+                        <a className="nav-link">
                           <img
                             className="state"
                             src="https://wallpapercave.com/wp/wp4034154.jpg"
@@ -69,82 +71,88 @@ const UserNavbar = () => {
                           />
                         </a>
                       </li>
-                      <li className="nav-item ms-md-2 p-2">
-                        <a href>
-                          {" "}
-                          <i className="bi bi-question-circle" />
-                        </a>
-                      </li>
-                      <li className="nav-item">
-                        <a className="nav-link" href="#">
-                          list your property
-                        </a>
-                      </li>
+
                       {/* {loggedIn && getUserInfo() ? (  //ToDo
                             <> </>): (<></>)} */}
                       <li className="nav-item">
-                        <button className="btn ms-md-2 bg-primary text-dark register-login-btn">
+                        <ButtonGroup className="btn ms-md-2 mx-2 ">
                           <Link to="/register">Register</Link>
-                        </button>
+                        </ButtonGroup>
                       </li>
-
 
                       {/*TODO */}
                       <li className="nav-item">
-                        <button>
-                          <Link to="/booking" className="btn btn-danger">
-                            Book Now
-                          </Link>
-                        </button>
+                        <ButtonGroup>
+                          
+                            <Link to="/booking" className="btn btn-danger">
+                              Book Now
+                            </Link>
+                         
+                        </ButtonGroup>
                       </li>
-                      <span className="m-2"></span>
-                      <button className="rounded">
-                        {loggedIn && getUserInfo() ? (
-                          <>
-                            <Dropdown as={ButtonGroup}>
-                              <Button
-                                style={{ padding: "3px" }}
-                                className="text-center bg-primary"
-                                onClick={() => navigate("/admin/dashboard")}
+                      <li>
+                      <ButtonGroup className="mx-2 ">
+                      
+                      <Link to="/cart" className="btn">
+                        <ShoppingButton  size={Number(quantity)} />
+                      </Link>
+                    
+                  </ButtonGroup>
+                      </li>
+                      
+                      <ButtonGroup>
+                      {loggedIn && getUserInfo() ? (
+                        <>
+                          <Dropdown as={ButtonGroup}>
+                            <Button
+                              style={{ padding: "3px" }}
+                              className="text-center bg-primary"
+                              onClick={() => navigate("/admin/dashboard")}
+                            >
+                              Welcome {getUserInfo()}
+                            </Button>
+                            <Dropdown.Toggle
+                              className="bg-primary"
+                              split
+                              id="dropdown-split-basic"
+                            />
+                            <Dropdown.Menu className="bg-primary">
+                              <Dropdown.Item
+                                onClick={() => navigate("/admin/profile")}
                               >
-                                Welcome {getUserInfo()}
-                              </Button>
-                              <Dropdown.Toggle
-                                className="bg-primary"
-                                split
-                                id="dropdown-split-basic"
-                              />
-                              <Dropdown.Menu className="bg-primary">
-                                <Dropdown.Item
-                                  onClick={() => navigate("/admin/profile")}
-                                >
-                                  My Profile
-                                </Dropdown.Item>
-                                <Dropdown.Item
-                                  onClick={() => navigate("/admin/orders")}
-                                >
-                                  My Orders
-                                </Dropdown.Item>
-                                <Dropdown.Divider />
-                                <Dropdown.Item
-                                  onClick={() => {
-                                    removeAll();
-                                    navigate("/login");
-                                  }}
-                                >
-                                  Log Out
-                                </Dropdown.Item>
-                              </Dropdown.Menu>
-                            </Dropdown>
-                          </>
-                        ) : (
-                          <Link to="/login" className="nav-link mx-2 p-2">
-                            <img src={icon2} width={25} height={25} alt="" />{" "}
-                            login <LuLogIn />
-                          </Link>
-                        )}
-                      </button>
+                                My Profile
+                              </Dropdown.Item>
+                              <Dropdown.Item
+                                onClick={() => navigate("/admin/orders")}
+                              >
+                                My Orders
+                              </Dropdown.Item>
+                              <Dropdown.Divider />
+                              <Dropdown.Item
+                                onClick={() => {
+                                  removeAll();
+                                  navigate("/login");
+                                }}
+                              >
+                                Log Out
+                              </Dropdown.Item>
+                            </Dropdown.Menu>
+                          </Dropdown>
+                        </>
+                      ) : (
+                      
+                          <li>
+                            <ButtonGroup>
+                              <Link to="/login" className="btn btn-danger">
+                                login
+                              </Link>
+                            </ButtonGroup>
+                          </li>
+                        
+                      )}
+                        </ButtonGroup>
                     </ul>
+                  
                   </div>
                 </div>
               </nav>

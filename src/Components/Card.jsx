@@ -1,7 +1,10 @@
-
 import { Button, Card, Col, Form, Row } from "react-bootstrap";
 
+import { useDispatch } from "react-redux";
+import { addToCart } from "../slices/cartSlice";
+
 export const Cards = ({ data }) => {
+  const dispatch = useDispatch();
   return (
     <Card>
       <Row className="g-0">
@@ -21,6 +24,14 @@ export const Cards = ({ data }) => {
                 </Form.Select>
               </Col>
               <Col>
+                <Button
+                  variant="danger"
+                  onClick={() => {
+                    dispatch(addToCart(data));
+                  }}
+                >
+                  Add to Cart
+                </Button>
                 <Button variant="primary">Book</Button>
               </Col>
             </Row>

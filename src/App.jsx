@@ -15,6 +15,7 @@ import AdminOrders from "./Pages/admin/Orders";
 import AdminRooms from "./Pages/admin/Rooms";
 import AdminProfile from "./Pages/admin/Profile";
 import Booking from "./Pages/Booking";
+import Cart from "./Pages/Cart";
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
         <Route path="/" element={<UserLayout />}>
           <Route index element={<Home />} />
           <Route path="booking" element={<Booking />} />
+          <Route path="cart" element={<Cart/>} />
         </Route>
 
 
