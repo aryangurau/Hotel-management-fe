@@ -1,10 +1,6 @@
 import { Button, ButtonGroup, Dropdown } from "react-bootstrap";
-
 import { Link, useNavigate } from "react-router-dom";
-import { LuLogIn } from "react-icons/lu";
 import logo from "../assets/img/logo3.jpg";
-// import icon from "../assets/img/signup.gif";
-import icon2 from "../assets/img/login.gif";
 import { getCurrentUser, removeAll } from "../Utils/session";
 import { isLoggedIn } from "../Utils/login";
 import "./css/nav.css";
