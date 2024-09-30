@@ -12,10 +12,14 @@ import AdminDashboard from "./Pages/admin/Dashboard";
 import NotFound from "./Pages/NotFound";
 import AdminUsers from "./Pages/admin/Users";
 import AdminOrders from "./Pages/admin/Orders";
-import AdminRooms from "./Pages/admin/Rooms";
+import AdminRooms from "./Pages/admin/rooms/Rooms";
+import AdminRoomsCreate from "./pages/admin/rooms/Create";
+
+
 import AdminProfile from "./Pages/admin/Profile";
 import Booking from "./Pages/Booking";
 import Cart from "./Pages/Cart";
+import AdminRoomEdit from "./Pages/admin/rooms/Edit";
 
 function App() {
   return (
@@ -71,6 +75,22 @@ function App() {
             element={
               <PrivateRoute role={["admin"]}>
                 <AdminRooms />
+              </PrivateRoute>
+            }
+          />
+           <Route
+            path="rooms/create"
+            element={
+              <PrivateRoute role={["admin"]}>
+                <AdminRoomsCreate/>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="rooms/:id"
+            element={
+              <PrivateRoute role={["admin"]}>
+                <AdminRoomEdit />
               </PrivateRoute>
             }
           />
