@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Container, Row, Col, Card, Table, Badge, Spinner, Button, Form, Modal } from 'react-bootstrap';
 import { getMyBookings } from '../slices/bookingSlice';
@@ -11,10 +11,12 @@ import { URLS } from '../Constants';
 const Profile = () => {
   const dispatch = useDispatch();
   const { bookings, loading: bookingsLoading } = useSelector((state) => state.booking);
+  const fileInputRef = useRef(null);
   
   // User State
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [previewImage, setPreviewImage] = useState(null);
 
   // Edit Profile State
   const [showEditModal, setShowEditModal] = useState(false);
@@ -23,6 +25,7 @@ const Profile = () => {
     email: '',
     phone: '',
     address: '',
+    profilePicture: null
   });
   const [errors, setErrors] = useState({});
 
@@ -50,8 +53,10 @@ const Profile = () => {
       name: userData.name || '',
       email: userData.email || '',
       phone: userData.phone || '',
-      address: userData.address || ''
+      address: userData.address || '',
+      profilePicture: null
     });
+    setPreviewImage(null);
     setShowEditModal(true);
   };
 
@@ -62,6 +67,31 @@ const Profile = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  // Handle profile picture change
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+      setFormData(prev => ({
+        ...prev,
+        profilePicture: file
+      }));
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Validate form
@@ -84,16 +114,31 @@ const Profile = () => {
         return;
       }
 
-      // Only send allowed fields
-      const updateData = {
-        name: formData.name.trim(),
-        phone: formData.phone?.trim() || '',
-        address: formData.address?.trim() || ''
-      };
+      // Create FormData for multipart/form-data
+      const formDataToSend = new FormData();
+      
+      // Add required fields first
+      formDataToSend.append('name', formData.name.trim());
+      
+      // Add optional fields
+      if (formData.phone?.trim()) {
+        formDataToSend.append('phone', formData.phone.trim());
+      }
+      if (formData.address?.trim()) {
+        formDataToSend.append('address', formData.address.trim());
+      }
+      
+      // Add profile picture if it's a new file
+      if (formData.profilePicture instanceof File) {
+        formDataToSend.append('profilePicture', formData.profilePicture);
+      }
 
-      console.log('Updating profile with data:', updateData);
-      const response = await axiosInstance.put('/users/profile', updateData);
-      console.log('Update response:', response);
+      console.log('Updating profile...');
+      const response = await axiosInstance.put('/users/profile', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
 
       if (response.data?.data) {
         const updatedUser = response.data.data;
@@ -108,7 +153,7 @@ const Profile = () => {
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to update profile';
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to update profile';
       toast.error(errorMessage);
     }
   };
@@ -121,6 +166,34 @@ const Profile = () => {
       </Modal.Header>
       <Modal.Body>
         <Form onSubmit={handleUpdateProfile}>
+          <div className="text-center mb-4">
+            <div 
+              className="position-relative d-inline-block"
+              style={{ cursor: 'pointer' }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <img
+                src={previewImage || user?.profilePicture || 'https://via.placeholder.com/150'}
+                alt="Profile"
+                className="rounded-circle"
+                style={{ width: '150px', height: '150px', objectFit: 'cover' }}
+              />
+              <div 
+                className="position-absolute bottom-0 end-0 bg-primary rounded-circle p-2"
+                style={{ cursor: 'pointer' }}
+              >
+                <i className="fas fa-camera text-white"></i>
+              </div>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="d-none"
+              accept="image/*"
+              onChange={handleProfilePictureChange}
+            />
+          </div>
+
           <Form.Group className="mb-3">
             <Form.Label>Name</Form.Label>
             <Form.Control
@@ -198,18 +271,28 @@ const Profile = () => {
             <Card.Body>
               <div className="text-center mb-4">
                 <img
-                  src={user?.avatar || 'https://via.placeholder.com/150'}
-                  alt="Profile"
+                  src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                  alt={user?.name}
                   className="rounded-circle mb-3"
                   style={{ width: '150px', height: '150px', objectFit: 'cover' }}
                 />
                 <h4>{user?.name}</h4>
-                <p className="text-muted">{user?.email}</p>
-              </div>
-              <div className="d-grid">
+                <p className="text-muted mb-1">{user?.email}</p>
+                <p className="text-muted mb-4">{user?.address}</p>
                 <Button variant="primary" onClick={handleShowEditModal}>
                   Edit Profile
                 </Button>
+              </div>
+              <hr />
+              <div className="mb-3">
+                <strong>Phone:</strong> {user?.phone || 'Not provided'}
+              </div>
+              <div className="mb-3">
+                <strong>Address:</strong> {user?.address || 'Not provided'}
+              </div>
+              <div className="mb-3">
+                <strong>Member Since:</strong> {' '}
+                {moment(user?.createdAt).format('MMMM DD, YYYY')}
               </div>
             </Card.Body>
           </Card>

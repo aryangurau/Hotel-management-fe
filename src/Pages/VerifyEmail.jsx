@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { Alert, Spinner } from "react-bootstrap";
+import { Alert, Spinner, Form, InputGroup } from "react-bootstrap";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { axiosInstance } from "../Utils/axiosInstance";
 import { URLS } from "../Constants";
+import { FaEnvelope, FaKey } from 'react-icons/fa';
+import "./css/verify.css";
 
 import banner from "../assets/img/hotelbanner.jpg";
 import banner2 from "../assets/img/hotelbanner2.jpg";
@@ -16,22 +18,19 @@ const VerifyEmail = () => {
     email: "",
     token: "",
   });
-  const [error, setError] = useState(""); // State for error message
+  const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
   const [submitDisabled, setSubmitDisabled] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); //prevents the by default submission of form
-    setError(""); // Clear error before new attempt
+    e.preventDefault();
+    setError("");
     try {
-      // API backend
       setSubmitDisabled(true);
       const { data } = await axiosInstance.post(
-        //posts for token confirmation
         `${URLS.USERS}/verify-email`,
         verificationData
       );
-      //   console.log({ data });
       if (data.msg === "Thankyou for verifying your email") {
         setMsg("Thank you for verifying your email");
         setTimeout(() => {
@@ -43,210 +42,143 @@ const VerifyEmail = () => {
     } catch (e) {
       setSubmitDisabled(false);
       const errMsg = e?.response?.data?.msg || "Something went wrong";
-      setError(errMsg); // Set the error message in state
+      setError(errMsg);
     }
   };
+
   const handleInput = (e) => {
     const regex = new RegExp(/^\d+$/, "g");
     const isValid = regex.test(e.target.value);
     if (isValid || e.target.value === "") {
-      setVerificationData((prev) => {
-        return { ...prev, token: e.target.value };
-      }); // sets the token data in verification data
+      setVerificationData((prev) => ({
+        ...prev,
+        token: e.target.value,
+      }));
     }
   };
+
   useEffect(() => {
     if (!state?.email) {
-      navigate("/register"); //throws back to register page if email is empty
+      navigate("/register");
     }
-    setVerificationData((prev) => {
-      return {
-        ...prev,
-        email: state?.email,
-      };
-    });
+    setVerificationData((prev) => ({
+      ...prev,
+      email: state?.email,
+    }));
   }, [navigate, state]);
+
   return (
-    <>
-      <section className="d-flex justify-content-center align-items-center min-vh-100">
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-lg-6 col-md-8">
-              <div className="card-body">
-                <div id="carouselExampleCaptions" className="carousel slide ">
-                  <div className="carousel-indicators">
-                    <button
-                      type="button"
-                      data-bs-target="#carouselExampleCaptions"
-                      data-bs-slide-to={0}
-                      className="active"
-                      aria-current="true"
-                      aria-label="Slide 1"
-                    />
-                    <button
-                      type="button"
-                      data-bs-target="#carouselExampleCaptions"
-                      data-bs-slide-to={1}
-                      aria-label="Slide 2"
-                    />
-                    <button
-                      type="button"
-                      data-bs-target="#carouselExampleCaptions"
-                      data-bs-slide-to={2}
-                      aria-label="Slide 3"
-                    />
-                  </div>
-                  <div className="carousel-inner">
-                    <div className="carousel-item active">
-                      <img
-                        src={banner}
-                        style={{ width: "700px", height: "630px" }}
-                        className=" "
-                        alt="..."
-                      />
-                      <div className="carousel-caption d-none d-md-block">
-                        <h5>Explore Our Hotels</h5>
-                        <p>We provide best quality services</p>
-                      </div>
-                    </div>
-                    <div className="carousel-item">
-                      <img
-                        src={banner2}
-                        style={{ width: "700px", height: "630px" }}
-                        className="d-block "
-                        alt="..."
-                      />
-                      <div className="carousel-caption d-none d-md-block">
-                        <h5>Explore Our Hotels</h5>
-                        <p>We provide best quality services</p>
-                      </div>
-                    </div>
-                    <div className="carousel-item">
-                      <img
-                        src={banner3}
-                        style={{ width: "700px", height: "630px" }}
-                        className="d-block w-100"
-                        alt="..."
-                      />
-                      <div className="carousel-caption d-none d-md-block">
-                        <h5>Explore Our Hotels</h5>
-                        <p>We provide best quality services</p>
-                      </div>
+    <section className="verify-section">
+      <div className="verify-container">
+        <div className="row verify-row g-0">
+          <div className="col-lg-6 p-0 d-none d-lg-block">
+            <div className="carousel-wrapper">
+              <div id="verifyCarousel" className="carousel slide carousel-fade h-100" data-bs-ride="carousel">
+                <div className="carousel-indicators">
+                  <button type="button" data-bs-target="#verifyCarousel" data-bs-slide-to="0" className="active" />
+                  <button type="button" data-bs-target="#verifyCarousel" data-bs-slide-to="1" />
+                  <button type="button" data-bs-target="#verifyCarousel" data-bs-slide-to="2" />
+                </div>
+                <div className="carousel-inner h-100">
+                  <div className="carousel-item active h-100">
+                    <img src={banner} alt="Hotel view" />
+                    <div className="carousel-caption">
+                      <h5>Welcome to XYZ Hotel</h5>
+                      <p>Experience luxury and comfort at its finest</p>
                     </div>
                   </div>
-                  <button
-                    className="carousel-control-prev"
-                    type="button"
-                    data-bs-target="#carouselExampleCaptions"
-                    data-bs-slide="prev"
-                  >
-                    <span
-                      className="carousel-control-prev-icon"
-                      aria-hidden="true"
-                    />
-                    <span className="visually-hidden">Previous</span>
-                  </button>
-                  <button
-                    className="carousel-control-next"
-                    type="button"
-                    data-bs-target="#carouselExampleCaptions"
-                    data-bs-slide="next"
-                  >
-                    <span
-                      className="carousel-control-next-icon"
-                      aria-hidden="true"
-                    />
-                    <span className="visually-hidden">Next</span>
-                  </button>
+                  <div className="carousel-item h-100">
+                    <img src={banner2} alt="Hotel interior" />
+                    <div className="carousel-caption">
+                      <h5>Premium Amenities</h5>
+                      <p>Discover our world-class facilities</p>
+                    </div>
+                  </div>
+                  <div className="carousel-item h-100">
+                    <img src={banner3} alt="Hotel room" />
+                    <div className="carousel-caption">
+                      <h5>Your Home Away From Home</h5>
+                      <p>Creating memorable stays since 2000</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="col-lg-6 col-md-8">
-              <div className="card shadow-sm">
-                <div className="card-body">
-                  <form
-                    className="form needs-validation"
-                    onSubmit={(e) => handleSubmit(e)}
-                  >
-                    <div className="text-center mb-4">
-                      <img className="img-logo" src={logo} alt="Logo" />
-                      <h2 className="mt-3">Please check your email!</h2>
-
-                      <small className="text-body-secondary">
-                        We&apos;ve emailed a 6-digit confirmation code. Please
-                        enter the code in the box below to verify your email.
-                      </small>
-                      {/* Display the Alert component below the heading */}
-                      {(msg || error) && (
-                        <Alert
-                          variant={error ? "danger" : "success"}
-                          className="text-center"
-                        >
-                          {error || msg}
-                        </Alert>
-                      )}
-                    </div>
-
-                    <div className="mb-1">
-                      <input
-                        type="email"
-                        className="form-control"
-                        placeholder="Enter email"
-                        disabled
-                        value={verificationData?.email}
-                      />
-                    </div>
-
-                    <div className="mb-4">
-                      <input
-                        className="form-control"
-                        placeholder="6 digit token"
-                        value={verificationData?.token}
-                        maxLength="6"
-                        onChange={(e) => handleInput(e)}
-                        required
-                      />
-                    </div>
-
-                    <div className="text-center">
-                      <button
-                        type="submit"
-                        className="btn btn-primary w-100"
-                        disabled={submitDisabled}
-                      >
-                        {" "}
-                        {submitDisabled && (
-                          <Spinner
-                            animation="border"
-                            variant="light"
-                            size="sm"
-                            className="mx-1"
-                          />
-                        )}
-                        Verify
-                      </button>
-                    </div>
-                    <div>
-                      <p className="text-center ">
-                        Already have an account?{" "}
-                        <Link
-                          className="link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
-                          to="/login"
-                        >
-                          Login
-                        </Link>
-                      </p>
-                    </div>
-                    <div className="msg mt-3" />
-                  </form>
-                </div>
+                <button className="carousel-control-prev" type="button" data-bs-target="#verifyCarousel" data-bs-slide="prev">
+                  <span className="carousel-control-prev-icon" />
+                  <span className="visually-hidden">Previous</span>
+                </button>
+                <button className="carousel-control-next" type="button" data-bs-target="#verifyCarousel" data-bs-slide="next">
+                  <span className="carousel-control-next-icon" />
+                  <span className="visually-hidden">Next</span>
+                </button>
               </div>
             </div>
           </div>
+
+          <div className="col-lg-6">
+            <div className="verify-form-wrapper">
+              <div className="text-center mb-4">
+                <img src={logo} alt="Logo" className="img-logo" />
+                <h2 className="verify-title">Verify Your Email</h2>
+                <p className="verify-subtitle">
+                  We've emailed a 6-digit confirmation code to your email address. Please enter the code below to complete your registration.
+                </p>
+                {(msg || error) && (
+                  <Alert variant={error ? "danger" : "success"} className="text-center">
+                    {error || msg}
+                  </Alert>
+                )}
+              </div>
+
+              <Form onSubmit={handleSubmit}>
+                <InputGroup className="mb-3">
+                  <InputGroup.Text>
+                    <FaEnvelope />
+                  </InputGroup.Text>
+                  <Form.Control
+                    type="email"
+                    placeholder="Email Address"
+                    value={verificationData?.email}
+                    disabled
+                    className="verify-input"
+                  />
+                </InputGroup>
+
+                <InputGroup className="mb-4">
+                  <InputGroup.Text>
+                    <FaKey />
+                  </InputGroup.Text>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={verificationData?.token}
+                    onChange={handleInput}
+                    maxLength="6"
+                    required
+                    className="verify-input"
+                  />
+                </InputGroup>
+
+                <button type="submit" className="btn btn-primary w-100 verify-btn" disabled={submitDisabled}>
+                  {submitDisabled && (
+                    <Spinner animation="border" variant="light" size="sm" className="me-2" />
+                  )}
+                  Verify Email
+                </button>
+
+                <div className="text-center mt-4">
+                  <p className="mb-0">
+                    Already have an account?{" "}
+                    <Link to="/login" className="verify-link">
+                      Login here
+                    </Link>
+                  </p>
+                </div>
+              </Form>
+            </div>
+          </div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 };
 
