@@ -6,6 +6,7 @@ import moment from 'moment';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axiosInstance from '../Utils/axiosInstance';
+import { URLS } from '../Constants';
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -20,196 +21,231 @@ const Profile = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: '',
-    confirmPassword: '',
+    phone: '',
+    address: '',
   });
   const [errors, setErrors] = useState({});
 
+  // Initialize user state from session storage
   useEffect(() => {
-    // Get user data from session storage
-    const userStr = sessionStorage.getItem('user');
-    if (userStr) {
-      const userData = JSON.parse(userStr);
-      setUser(userData);
-      setFormData(prev => ({
-        ...prev,
-        name: userData.name || '',
-        email: userData.email || ''
-      }));
+    const storedUser = sessionStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+        toast.error('Error loading profile data');
+      }
     }
-    setLoading(false);
-
-    // Fetch bookings
+    // Fetch bookings if needed
     dispatch(getMyBookings());
   }, [dispatch]);
 
+  // Handle edit modal
+  const handleShowEditModal = () => {
+    const userData = user || JSON.parse(sessionStorage.getItem('user') || '{}');
+    setFormData({
+      name: userData.name || '',
+      email: userData.email || '',
+      phone: userData.phone || '',
+      address: userData.address || ''
+    });
+    setShowEditModal(true);
+  };
+
+  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
   };
 
+  // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-    
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
-    }
-    
-    if (formData.password && formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-    
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
+    if (!formData.name?.trim()) newErrors.name = 'Name is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  // Update profile function
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
-    const updateData = {
-      name: formData.name,
-      email: formData.email,
-    };
-
-    if (formData.password) {
-      updateData.password = formData.password;
-    }
+    if (!validateForm()) return;
 
     try {
+      const token = sessionStorage.getItem('token');
+      if (!token) {
+        toast.error('Please login to update your profile');
+        return;
+      }
+
+      // Only send allowed fields
+      const updateData = {
+        name: formData.name.trim(),
+        phone: formData.phone?.trim() || '',
+        address: formData.address?.trim() || ''
+      };
+
+      console.log('Updating profile with data:', updateData);
       const response = await axiosInstance.put('/users/profile', updateData);
-      
-      if (response.data?.success) {
-        // Update session storage
-        const updatedUser = { ...user, ...updateData };
-        delete updatedUser.password; // Don't store password
-        sessionStorage.setItem('user', JSON.stringify(updatedUser));
-        
+      console.log('Update response:', response);
+
+      if (response.data?.data) {
+        const updatedUser = response.data.data;
         // Update local state
         setUser(updatedUser);
-        
+        // Update session storage
+        sessionStorage.setItem('user', JSON.stringify(updatedUser));
         toast.success('Profile updated successfully');
         setShowEditModal(false);
-        
-        // Reset password fields
-        setFormData(prev => ({
-          ...prev,
-          password: '',
-          confirmPassword: ''
-        }));
       } else {
-        throw new Error(response.data?.message || 'Failed to update profile');
+        throw new Error('Invalid response format');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error(error.response?.data?.message || error.message || 'Failed to update profile');
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to update profile';
+      toast.error(errorMessage);
     }
   };
 
-  const getStatusBadge = (status) => {
-    const variants = {
-      'CONFIRMED': 'success',
-      'PENDING': 'warning',
-      'CANCELLED': 'danger',
-      'COMPLETED': 'info'
-    };
-    return <Badge bg={variants[status] || 'secondary'}>{status}</Badge>;
-  };
+  // Edit Profile Modal
+  const renderEditProfileModal = () => (
+    <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
+      <Modal.Header closeButton>
+        <Modal.Title>Edit Profile</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Form onSubmit={handleUpdateProfile}>
+          <Form.Group className="mb-3">
+            <Form.Label>Name</Form.Label>
+            <Form.Control
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              isInvalid={!!errors.name}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errors.name}
+            </Form.Control.Feedback>
+          </Form.Group>
 
-  const formatDate = (dateString) => {
-    try {
-      return moment(dateString).format('MMM D, YYYY');
-    } catch (e) {
-      return 'Invalid Date';
-    }
-  };
+          <Form.Group className="mb-3">
+            <Form.Label>Email</Form.Label>
+            <Form.Control
+              type="email"
+              value={formData.email}
+              disabled
+            />
+            <Form.Text className="text-muted">
+              Email cannot be changed
+            </Form.Text>
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Phone</Form.Label>
+            <Form.Control
+              type="text"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+            />
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Address</Form.Label>
+            <Form.Control
+              type="text"
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+            />
+          </Form.Group>
+
+          <div className="d-flex justify-content-end gap-2">
+            <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit">
+              Save Changes
+            </Button>
+          </div>
+        </Form>
+      </Modal.Body>
+    </Modal>
+  );
 
   if (loading) {
     return (
-      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
-        <Spinner animation="border" variant="primary" />
-      </Container>
-    );
-  }
-
-  if (!user) {
-    return (
-      <Container className="py-4">
-        <Card className="text-center p-5">
-          <Card.Body>
-            <h4>Session Expired</h4>
-            <p className="text-muted">Please log in again to view your profile.</p>
-          </Card.Body>
-        </Card>
-      </Container>
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "400px" }}>
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </div>
     );
   }
 
   return (
-    <Container className="py-4">
+    <Container className="py-5">
       <Row>
-        {/* Profile Information */}
-        <Col lg={4} className="mb-4">
-          <Card>
+        <Col md={4}>
+          <Card className="mb-4">
             <Card.Body>
               <div className="text-center mb-4">
-                <div className="bg-primary text-white rounded-circle d-inline-flex justify-content-center align-items-center" 
-                     style={{ width: '100px', height: '100px', fontSize: '2.5rem' }}>
-                  {user.name?.charAt(0).toUpperCase()}
-                </div>
-                <h4 className="mt-3 mb-0">{user.name}</h4>
-                <p className="text-muted">{user.email}</p>
+                <img
+                  src={user?.avatar || 'https://via.placeholder.com/150'}
+                  alt="Profile"
+                  className="rounded-circle mb-3"
+                  style={{ width: '150px', height: '150px', objectFit: 'cover' }}
+                />
+                <h4>{user?.name}</h4>
+                <p className="text-muted">{user?.email}</p>
               </div>
-              
               <div className="d-grid">
-                <Button variant="outline-primary" onClick={() => setShowEditModal(true)}>
+                <Button variant="primary" onClick={handleShowEditModal}>
                   Edit Profile
                 </Button>
-              </div>
-
-              <hr />
-
-              <div>
-                <h6 className="text-muted mb-3">Account Information</h6>
-                <p className="mb-2">
-                  <strong>Role:</strong> {user.roles?.join(', ') || 'User'}
-                </p>
-                <p className="mb-2">
-                  <strong>Member Since:</strong> {formatDate(user.createdAt)}
-                </p>
-                <p className="mb-0">
-                  <strong>Last Updated:</strong> {formatDate(user.updatedAt)}
-                </p>
               </div>
             </Card.Body>
           </Card>
         </Col>
 
-        {/* Recent Bookings */}
-        <Col lg={8}>
+        <Col md={8}>
+          <Card className="mb-4">
+            <Card.Body>
+              <h5 className="mb-4">Profile Details</h5>
+              <Table>
+                <tbody>
+                  <tr>
+                    <td><strong>Full Name</strong></td>
+                    <td>{user?.name}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Email</strong></td>
+                    <td>{user?.email}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Phone</strong></td>
+                    <td>{user?.phone || 'Not provided'}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Address</strong></td>
+                    <td>{user?.address || 'Not provided'}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Member Since</strong></td>
+                    <td>{moment(user?.createdAt).format('MMMM D, YYYY')}</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
+
           <Card>
             <Card.Body>
               <div className="d-flex justify-content-between align-items-center mb-4">
@@ -241,12 +277,16 @@ const Profile = () => {
                       {bookings.slice(0, 5).map((booking) => (
                         <tr key={booking._id}>
                           <td>{booking.roomId?.name || 'N/A'}</td>
-                          <td>{formatDate(booking.checkIn)}</td>
-                          <td>{formatDate(booking.checkOut)}</td>
+                          <td>{moment(booking.checkIn).format('MMM D, YYYY')}</td>
+                          <td>{moment(booking.checkOut).format('MMM D, YYYY')}</td>
                           <td>
                             NPR {booking.totalAmount?.toLocaleString()}
                           </td>
-                          <td>{getStatusBadge(booking.status)}</td>
+                          <td>
+                            <Badge bg={booking.status === 'CONFIRMED' ? 'success' : booking.status === 'PENDING' ? 'warning' : booking.status === 'CANCELLED' ? 'danger' : 'info'}>
+                              {booking.status}
+                            </Badge>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -258,80 +298,7 @@ const Profile = () => {
         </Col>
       </Row>
 
-      {/* Edit Profile Modal */}
-      <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Profile</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Name</Form.Label>
-              <Form.Control
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                isInvalid={!!errors.name}
-              />
-              <Form.Control.Feedback type="invalid">
-                {errors.name}
-              </Form.Control.Feedback>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                isInvalid={!!errors.email}
-              />
-              <Form.Control.Feedback type="invalid">
-                {errors.email}
-              </Form.Control.Feedback>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>New Password (optional)</Form.Label>
-              <Form.Control
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                isInvalid={!!errors.password}
-              />
-              <Form.Control.Feedback type="invalid">
-                {errors.password}
-              </Form.Control.Feedback>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Confirm New Password</Form.Label>
-              <Form.Control
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                isInvalid={!!errors.confirmPassword}
-              />
-              <Form.Control.Feedback type="invalid">
-                {errors.confirmPassword}
-              </Form.Control.Feedback>
-            </Form.Group>
-
-            <div className="d-flex justify-content-end gap-2">
-              <Button variant="secondary" onClick={() => setShowEditModal(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" type="submit">
-                Save Changes
-              </Button>
-            </div>
-          </Form>
-        </Modal.Body>
-      </Modal>
+      {renderEditProfileModal()}
     </Container>
   );
 };

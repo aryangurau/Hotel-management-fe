@@ -46,80 +46,26 @@ const Login = () => {
         throw new Error('Invalid response from server');
       }
 
-      // Store token
-      const token = response.data.data;
-      console.log('Setting token:', token);
+      const { token, user } = response.data.data;
+      if (!token || !user) {
+        throw new Error('Invalid response format');
+      }
+
+      // Store token and user data
+      console.log('Setting token and user data');
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(user));
+
+      // Update redux store if needed
+      setCurrentUser(user);
+
+      // Redirect based on role
+      const redirectPath = location.state?.from || (user.roles.includes('admin') ? '/admin/dashboard' : '/');
+      navigate(redirectPath);
       
-      // Verify token format
-      const tokenParts = token.split('.');
-      if (tokenParts.length !== 3) {
-        throw new Error('Invalid token format');
-      }
-
-      try {
-        // Decode token
-        const payload = JSON.parse(atob(tokenParts[1]));
-        console.log('Token payload:', payload);
-        
-        if (!payload._id || !payload.email || !payload.roles) {
-          throw new Error('Invalid token payload');
-        }
-
-        // Store user data
-        const userData = {
-          _id: payload._id,
-          email: payload.email,
-          name: payload.name,
-          roles: Array.isArray(payload.roles) ? payload.roles : [payload.roles]
-        };
-        console.log('Setting user data:', userData);
-        
-        // Important: Set token first, then user data atomically
-        sessionStorage.setItem('token', token);
-        sessionStorage.setItem('user', JSON.stringify(userData));
-        
-        // Double check storage
-        const storedToken = sessionStorage.getItem('token');
-        const storedUser = sessionStorage.getItem('user');
-        console.log('Storage check:', {
-          hasToken: !!storedToken,
-          hasUser: !!storedUser
-        });
-        
-        if (!storedToken || !storedUser) {
-          throw new Error('Failed to store auth data');
-        }
-        
-        // Check for pending payment
-        const pendingPayment = sessionStorage.getItem('pendingPayment');
-        if (pendingPayment) {
-          console.log('Found pending payment, redirecting to payment page');
-          navigate('/payment', { 
-            replace: true, 
-            state: JSON.parse(pendingPayment)
-          });
-          return;
-        }
-        
-        // Redirect based on role
-        const isAdmin = userData.roles.includes('admin');
-        console.log('Is admin user:', isAdmin);
-        
-        if (isAdmin) {
-          console.log('Redirecting to admin dashboard');
-          navigate('/admin/dashboard', { replace: true });
-        } else {
-          const returnPath = location.state?.returnTo || location.state?.from?.pathname || "/";
-          console.log('Redirecting to:', returnPath);
-          navigate(returnPath, { replace: true });
-        }
-      } catch (error) {
-        console.error('Error processing token:', error);
-        throw new Error('Invalid token data: ' + error.message);
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error?.response?.data?.msg || error.message || "Login failed");
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.response?.data?.message || err.message || "Login failed");
     } finally {
       setSubmitDisabled(false);
     }

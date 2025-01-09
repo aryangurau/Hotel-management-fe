@@ -47,23 +47,18 @@ axiosInstance.interceptors.request.use(
       const isPublicRoute = publicRoutes.some(route => config.url.includes(route));
       console.log('Is public route:', isPublicRoute);
       
-      // Get token from session storage if not already in headers
-      const token = config.headers?.access_token || sessionStorage.getItem('token');
-      console.log('Token found:', token ? 'Yes' : 'No');
+      // Get token from session storage
+      const token = sessionStorage.getItem('token');
       
-      if (token) {
-        // Set token in both headers for compatibility
-        config.headers.access_token = token;
-        config.headers.authorization = `Bearer ${token}`;
-        console.log('Token headers set');
-      } else if (!isPublicRoute) {
-        console.log('No token found for protected route');
-        return Promise.reject(new Error('No access token found'));
+      // Add auth header if route requires authentication
+      if (!isPublicRoute && token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+        console.log('Added auth token to request');
       }
       
       return config;
     } catch (error) {
-      console.error('Request interceptor error:', error);
+      console.error('Error in request interceptor:', error);
       return Promise.reject(error);
     }
   },
@@ -112,7 +107,10 @@ axiosInstance.interceptors.response.use(
               sessionStorage.setItem('token', newToken);
               
               // Update the original request with new token
-              originalRequest.headers.access_token = newToken;
+              originalRequest.headers = {
+                ...originalRequest.headers,
+                'Authorization': `Bearer ${newToken}`
+              };
               
               // Process all queued requests with new token
               processQueue(null, newToken);
@@ -134,7 +132,10 @@ axiosInstance.interceptors.response.use(
           return new Promise((resolve, reject) => {
             failedQueue.push({ resolve, reject });
           }).then(token => {
-            originalRequest.headers.access_token = token;
+            originalRequest.headers = {
+              ...originalRequest.headers,
+              'Authorization': `Bearer ${token}`
+            };
             return axiosInstance(originalRequest);
           }).catch(err => {
             return Promise.reject(err);

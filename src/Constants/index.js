@@ -16,7 +16,8 @@ export const URLS = {
   FORGET_PASSWORD: `${BASE_URL}/users/forget-password`,
   VERIFY_FORGET_PASSWORD: `${BASE_URL}/users/verify-forget-password`,
   CHANGE_PASSWORD: `${BASE_URL}/users/change-password`,
-  PROFILE: `${BASE_URL}/profile`,
+  PROFILE: `${BASE_URL}/users/profile`, // Get user profile
+  UPDATE_PROFILE: `${BASE_URL}/users/profile`, // Update user profile (same endpoint as GET but with PUT method)
 };
 
 // Debug log
