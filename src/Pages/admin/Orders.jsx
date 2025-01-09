@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Badge, Container, Pagination, Form, Row, Col, Alert, Card } from 'react-bootstrap';
+import { Table, Badge, Container, Pagination, Form, Row, Col, Alert, Card, Modal, Button } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { listOrders } from '../../slices/orderSlice';
-import { Notify } from '../../components/Notify';
+import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaPhone, FaBed, FaCalendarAlt, FaCreditCard } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaBed, FaCalendarAlt, FaCreditCard, FaEdit } from 'react-icons/fa';
+import { default as axiosInstance } from '../../Utils/axiosInstance';
 
 const AdminOrders = () => {
   const dispatch = useDispatch();
@@ -13,7 +14,11 @@ const AdminOrders = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState('');
-  
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [newStatus, setNewStatus] = useState('');
+  const [updating, setUpdating] = useState(false);
+
   useEffect(() => {
     // Check user session and roles
     const userStr = sessionStorage.getItem('user');
@@ -21,7 +26,7 @@ const AdminOrders = () => {
     
     if (!userStr || !token) {
       console.log('Missing auth data:', { hasUser: !!userStr, hasToken: !!token });
-      Notify.error('Please log in to continue');
+      toast.error('Please log in to continue');
       navigate('/login');
       return;
     }
@@ -30,7 +35,7 @@ const AdminOrders = () => {
       const user = JSON.parse(userStr);
       if (!user.roles?.includes('admin')) {
         console.log('User is not admin:', user.roles);
-        Notify.error('Access denied: Admin only');
+        toast.error('Access denied: Admin only');
         navigate('/');
         return;
       }
@@ -50,7 +55,7 @@ const AdminOrders = () => {
             sessionStorage.clear();
             navigate('/login');
           } else {
-            Notify.error(error.message || 'Failed to fetch orders');
+            toast.error(error.message || 'Failed to fetch orders');
           }
         });
     } catch (error) {
@@ -59,6 +64,47 @@ const AdminOrders = () => {
       navigate('/login');
     }
   }, [dispatch, page, limit, statusFilter, navigate]);
+
+  const handleStatusUpdate = async () => {
+    if (!selectedOrder || !newStatus) return;
+
+    setUpdating(true);
+    try {
+      const response = await axiosInstance.patch(
+        `/orders/${selectedOrder._id}/status`,
+        { status: newStatus },
+        {
+          headers: {
+            'access_token': sessionStorage.getItem('token')
+          }
+        }
+      );
+
+      if (response.data.success) {
+        toast.success('Order status updated successfully');
+        // Refresh orders list
+        dispatch(listOrders({ 
+          page, 
+          limit, 
+          filter: statusFilter ? { status: statusFilter } : {} 
+        }));
+        setShowStatusModal(false);
+      } else {
+        throw new Error(response.data.message || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to update status');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const openStatusModal = (order) => {
+    setSelectedOrder(order);
+    setNewStatus(order.status);
+    setShowStatusModal(true);
+  };
 
   const getStatusBadge = (status, type = 'status') => {
     const variants = {
@@ -85,6 +131,19 @@ const AdminOrders = () => {
       </Badge>
     );
   };
+
+  const renderStatusWithEdit = (order) => (
+    <div className="d-flex align-items-center gap-2">
+      {getStatusBadge(order.status, 'status')}
+      <Button 
+        variant="link" 
+        className="p-0 text-primary" 
+        onClick={() => openStatusModal(order)}
+      >
+        <FaEdit />
+      </Button>
+    </div>
+  );
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -169,7 +228,7 @@ const AdminOrders = () => {
                     </div>
                   </div>
                   <div className="d-flex gap-2">
-                    {getStatusBadge(order.status, 'status')}
+                    {renderStatusWithEdit(order)}
                     {getStatusBadge(order.paymentStatus, 'payment')}
                   </div>
                 </Card.Header>
@@ -257,35 +316,28 @@ const AdminOrders = () => {
                   disabled={currentPage === 1}
                 />
                 
-                {/* Show first page */}
                 {currentPage > 2 && (
                   <Pagination.Item onClick={() => handlePageChange(1)}>1</Pagination.Item>
                 )}
                 
-                {/* Show ellipsis if needed */}
                 {currentPage > 3 && <Pagination.Ellipsis />}
                 
-                {/* Show previous page if not first */}
                 {currentPage > 1 && (
                   <Pagination.Item onClick={() => handlePageChange(currentPage - 1)}>
                     {currentPage - 1}
                   </Pagination.Item>
                 )}
                 
-                {/* Current page */}
                 <Pagination.Item active>{currentPage}</Pagination.Item>
                 
-                {/* Show next page if not last */}
                 {currentPage < totalPages && (
                   <Pagination.Item onClick={() => handlePageChange(currentPage + 1)}>
                     {currentPage + 1}
                   </Pagination.Item>
                 )}
                 
-                {/* Show ellipsis if needed */}
                 {currentPage < totalPages - 2 && <Pagination.Ellipsis />}
                 
-                {/* Show last page */}
                 {currentPage < totalPages - 1 && (
                   <Pagination.Item onClick={() => handlePageChange(totalPages)}>
                     {totalPages}
@@ -314,14 +366,38 @@ const AdminOrders = () => {
               </Form.Select>
             </div>
           )}
-
-          <div className="text-center mt-3">
-            <small className="text-muted">
-              Showing {orders.length} of {total} orders
-            </small>
-          </div>
         </>
       )}
+
+      <Modal show={showStatusModal} onHide={() => setShowStatusModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Update Order Status</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Order #{selectedOrder?.orderNo}</p>
+          <Form.Group>
+            <Form.Label>Status</Form.Label>
+            <Form.Select 
+              value={newStatus} 
+              onChange={(e) => setNewStatus(e.target.value)}
+              disabled={updating}
+            >
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="completed">Completed</option>
+            </Form.Select>
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowStatusModal(false)} disabled={updating}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleStatusUpdate} disabled={updating}>
+            {updating ? 'Updating...' : 'Update Status'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };
