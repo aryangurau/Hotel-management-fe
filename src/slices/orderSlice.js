@@ -54,53 +54,25 @@ export const listOrders = createAsyncThunk(
   "orders/list",
   async ({ page = 1, limit = 10, filter = {} }, { rejectWithValue }) => {
     try {
-      // Get user data to check if admin
-      const user = getUserData();
-      const isAdmin = user?.roles?.includes('admin');
+      const queryParams = new URLSearchParams({
+        page: page,
+        limit: limit,
+        ...filter
+      }).toString();
       
-      // Use different endpoint for admin and regular users
-      const endpoint = isAdmin ? 'list' : 'my-orders';
+      const response = await axiosInstance.get(`${URLS.ORDERS}/list?${queryParams}`);
       
-      const response = await axiosInstance.get(
-        `${URLS.ORDERS}/${endpoint}`,
-        { 
-          params: { 
-            page, 
-            limit,
-            ...filter  // Include all filter parameters
-          }
-        }
-      );
-      
-      if (!response.data?.data) {
-        throw new Error(response.data?.msg || 'No orders found');
+      if (response.data?.data) {
+        return {
+          orders: response.data.data.orders,
+          currentPage: page,
+          totalPages: Math.ceil(response.data.data.total / limit),
+          total: response.data.data.total
+        };
       }
-      
-      // Transform the data to match our component's expectations
-      const orders = response.data.data.map(order => ({
-        ...order,
-        orderNumber: order.orderNo || order._id,
-        hotel: order.hotelName || order.hotel || 'N/A',
-        room: order.roomNumber || order.room || 'N/A',
-        checkIn: order.arrivalDate || order.checkIn,
-        checkOut: order.departureDate || order.checkOut,
-        totalPrice: order.amount || order.totalPrice || 0,
-        status: order.status || 'pending',
-        created_by: order.created_by || order.updated_by || 'Unknown',
-        createdAt: order.createdAt || new Date().toISOString()
-      }));
-      
-      return {
-        data: orders,
-        currentPage: response.data.currentPage || page,
-        totalPages: response.data.totalPages || 1,
-        total: response.data.total || orders.length
-      };
+      throw new Error(response.data?.msg || 'Failed to fetch orders');
     } catch (error) {
-      console.error('List orders error:', error);
-      return rejectWithValue({
-        message: error.response?.data?.msg || error.message || "Failed to fetch orders"
-      });
+      return rejectWithValue({ message: error.response?.data?.msg || error.message });
     }
   }
 );
@@ -166,7 +138,7 @@ const orderSlice = createSlice({
       .addCase(listOrders.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;
-        state.orders = action.payload.data;
+        state.orders = action.payload.orders;
         state.currentPage = action.payload.currentPage;
         state.totalPages = action.payload.totalPages;
       })

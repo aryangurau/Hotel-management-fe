@@ -1,6 +1,9 @@
 import { Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import "./styles/toast.css"; // Import custom toast styles
+import { useEffect } from "react";
+import { getToken, getCurrentUser, removeAll } from "./Utils/session";
 import Login from "./Pages/Login";
 import UserLayout from "./Layouts/UserLayout";
 import Home from "./Pages/Home";
@@ -27,11 +30,55 @@ import Profile from "./Pages/Profile";
 import BookingHistory from "./Pages/BookingHistory";
 
 const App = () => {
+  // Validate auth state on app load
+  useEffect(() => {
+    const validateAuth = () => {
+      try {
+        const token = getToken();
+        const user = getCurrentUser();
+
+        if (!token || !user) {
+          console.log('No auth data found, clearing session');
+          removeAll();
+          return;
+        }
+
+        // Verify token format
+        const tokenParts = token.split('.');
+        if (tokenParts.length !== 3) {
+          console.error('Invalid token format');
+          removeAll();
+          return;
+        }
+
+        // Decode token
+        const payload = JSON.parse(atob(tokenParts[1]));
+        
+        // Verify token payload matches user data
+        if (payload.email !== user.email || payload._id !== user._id) {
+          console.error('Token payload mismatch with user data');
+          removeAll();
+          return;
+        }
+
+        console.log('Auth state validated:', {
+          email: user.email,
+          roles: user.roles
+        });
+      } catch (error) {
+        console.error('Error validating auth state:', error);
+        removeAll();
+      }
+    };
+
+    validateAuth();
+  }, []);
+
   return (
     <>
       <ToastContainer
         position="top-right"
-        autoClose={5000}
+        autoClose={3000}
         hideProgressBar={false}
         newestOnTop={true}
         closeOnClick
@@ -40,6 +87,8 @@ const App = () => {
         draggable
         pauseOnHover
         theme="colored"
+        limit={3}
+        style={{ zIndex: 9999 }}
       />
       <Routes>
         {/* Separate routes for login, forget password, and signup */}

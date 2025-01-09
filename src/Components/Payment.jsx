@@ -80,6 +80,13 @@ const Payment = ({ show, handleClose, selectedRoom, bookingDetails }) => {
 
     setIsProcessing(true);
     try {
+      // Get user data
+      const userStr = sessionStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('User session expired');
+      }
+      const user = JSON.parse(userStr);
+
       const bookingData = {
         roomId: selectedRoom._id,
         checkIn: bookingDetails.checkIn,
@@ -89,23 +96,46 @@ const Payment = ({ show, handleClose, selectedRoom, bookingDetails }) => {
         guestName: paymentData.guestName,
         phoneNumber: paymentData.phoneNumber,
         paymentMethod: paymentData.paymentMethod,
-        guests: bookingDetails.guests
+        guests: bookingDetails.guests,
+        userId: user._id // Add user ID to booking
       };
 
       console.log('Sending booking data:', bookingData);
 
       const response = await axiosInstance.post('/bookings', bookingData);
+      console.log('Booking response:', response.data);
 
       if (response.data.success) {
         toast.success(`Booking confirmed with ${paymentData.paymentMethod}!`);
         handleClose();
+        // Store booking ID for future reference
+        sessionStorage.setItem('lastBookingId', response.data.bookingId);
         navigate('/booking-history');
       } else {
         throw new Error(response.data?.message || 'Booking failed');
       }
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error(error.response?.data?.message || 'Booking failed. Please try again.');
+      if (error?.response?.status === 401) {
+        // Session expired during booking
+        toast.error('Your session has expired. Please log in again.');
+        // Store booking data
+        sessionStorage.setItem('pendingBooking', JSON.stringify({
+          selectedRoom,
+          bookingDetails,
+          paymentData
+        }));
+        // Redirect to login
+        navigate('/login', { 
+          replace: true,
+          state: { 
+            from: '/booking',
+            returnTo: '/booking'
+          }
+        });
+      } else {
+        toast.error(error.response?.data?.message || error.message || 'Booking failed. Please try again.');
+      }
     } finally {
       setIsProcessing(false);
     }

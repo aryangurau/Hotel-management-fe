@@ -1,12 +1,45 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import PropTypes from "prop-types";
-import { getCurrentUser } from "../Utils/session";
+import { getCurrentUser, getToken, removeAll } from "../Utils/session";
 
 // Higher Order Component
 const PrivateRoute = ({ children, roles }) => {
-  const isLoggedIn = () => {
+  const location = useLocation();
+
+  const isAuthenticated = () => {
+    const token = getToken();
     const user = getCurrentUser();
-    return !!user;
+    
+    if (!token || !user) {
+      console.error('Missing authentication:', { hasToken: !!token, hasUser: !!user });
+      return false;
+    }
+    
+    try {
+      // Verify token format
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        console.error('Invalid token format');
+        removeAll();
+        return false;
+      }
+
+      // Decode token
+      const payload = JSON.parse(atob(tokenParts[1]));
+      
+      // Verify token payload matches user data
+      if (payload.email !== user.email || payload._id !== user._id) {
+        console.error('Token payload mismatch with user data');
+        removeAll();
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error validating token:', error);
+      removeAll();
+      return false;
+    }
   };
 
   const hasRequiredRole = () => {
@@ -25,7 +58,12 @@ const PrivateRoute = ({ children, roles }) => {
       }
       
       const hasRole = roles.some(role => user.roles.includes(role));
-      console.log('Role check:', { required: roles, userRoles: user.roles, hasRole });
+      console.log('Role check:', { 
+        required: roles, 
+        userRoles: user.roles, 
+        hasRole,
+        path: location.pathname 
+      });
       return hasRole;
     } catch (error) {
       console.error('Error checking user roles:', error);
@@ -33,9 +71,9 @@ const PrivateRoute = ({ children, roles }) => {
     }
   };
 
-  if (!isLoggedIn()) {
-    console.log('User not logged in, redirecting to login');
-    return <Navigate to="/login" replace />;
+  if (!isAuthenticated()) {
+    console.log('User not authenticated, redirecting to login');
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (!hasRequiredRole()) {

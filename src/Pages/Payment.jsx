@@ -34,11 +34,31 @@ const Payment = () => {
     // Clear any previous payment results when component mounts
     dispatch(clearPaymentResult());
     
-    if (!isLoggedIn()) {
-      navigate('/login', { state: { from: location } });
+    // Check login status
+    const token = sessionStorage.getItem('token');
+    const user = sessionStorage.getItem('user');
+    
+    if (!token || !user) {
+      console.log('No auth data found, redirecting to login');
+      // Store current state before redirecting
+      sessionStorage.setItem('pendingPayment', JSON.stringify({
+        booking,
+        hotel,
+        totalPrice,
+        paymentMethod,
+        formData
+      }));
+      navigate('/login', { 
+        replace: true,
+        state: { 
+          from: location.pathname,
+          returnTo: '/payment'
+        }
+      });
       return;
     }
 
+    // Validate required data
     if (!hotel || !booking || !totalPrice) {
       console.error('Missing required data:', { hotel, booking, totalPrice });
       navigate('/');
@@ -51,7 +71,7 @@ const Payment = () => {
       return;
     }
 
-    // Check hotel status if it exists, otherwise assume it's available
+    // Check hotel status if it exists
     if (hotel.status && hotel.status !== 'empty') {
       console.error('Hotel is not available:', hotel.status);
       navigate('/');
@@ -79,18 +99,6 @@ const Payment = () => {
       navigate('/');
       return;
     }
-
-    const userStr = getCurrentUser();
-    if (!userStr) {
-      navigate('/login', { state: { from: location } });
-      return;
-    }
-
-    const user = JSON.parse(userStr);
-    if (!user || !user.name || !user.email) {
-      navigate('/login', { state: { from: location } });
-      return;
-    }
   }, [hotel, booking, totalPrice, navigate, location, dispatch]);
 
   useEffect(() => {
@@ -100,9 +108,6 @@ const Payment = () => {
       if (lastPaymentResult.success) {
         setToastVariant('success');
         setToastMessage('Payment successful! Redirecting to your bookings...');
-        setTimeout(() => {
-          navigate('/my-bookings');
-        }, 2000);
       } else {
         setToastVariant('danger');
         setToastMessage(lastPaymentResult.error || 'Payment failed. Please try again.');
@@ -196,12 +201,13 @@ const Payment = () => {
 
       // Get user data
       const user = getUserData();
-      if (!user || !user.name) {
+      if (!user || !user.name || !user.email) {
         throw new Error('User session expired');
       }
 
       // Create the order data
       const orderData = {
+        orderNo: Math.random().toString(36).substring(2, 15).toUpperCase(),
         receiver: user.name,
         arrivalDate: new Date(booking.checkIn).toISOString(),
         departureDate: new Date(booking.checkOut).toISOString(),
@@ -214,8 +220,10 @@ const Payment = () => {
           cardLastFour: (paymentMethod === 'credit_card' || paymentMethod === 'debit_card') 
             ? formData.cardNumber.slice(-4) 
             : null,
-          paymentId: Math.random().toString(36).substring(2, 15).toUpperCase()
-        }
+          paidAt: new Date().toISOString()
+        },
+        status: 'confirmed',
+        updated_by: user.email // This is required for user lookup
       };
 
       // Log the order data before sending
@@ -228,12 +236,98 @@ const Payment = () => {
       // Show success message
       dispatch(paymentResult({ success: true }));
       setShowConfirmation(false);
+      
+      // Show toast and redirect
+      setToastVariant('success');
+      setToastMessage('Payment successful! Redirecting to your bookings...');
+      setShowToast(true);
+      
+      // Add a small delay before redirecting
+      setTimeout(() => {
+        navigate('/my-bookings', { replace: true });
+      }, 2000);
     } catch (error) {
       console.error('Payment failed:', error);
-      dispatch(paymentResult({ success: false, error: error.message }));
       setShowConfirmation(false);
+      
+      // Check if it's an auth error
+      if (error?.response?.status === 401) {
+        // Show error toast
+        setToastVariant('danger');
+        setToastMessage('Your session has expired. Please log in again.');
+        setShowToast(true);
+        
+        // Store current state in sessionStorage for recovery
+        sessionStorage.setItem('pendingPayment', JSON.stringify({
+          booking,
+          hotel,
+          totalPrice,
+          paymentMethod,
+          formData
+        }));
+        
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          navigate('/login', { 
+            replace: true,
+            state: { 
+              from: location.pathname,
+              returnTo: '/payment'
+            }
+          });
+        }, 2000);
+      } else {
+        // Show error toast for other errors
+        const errorMsg = error?.response?.data?.msg || error.message || 'Payment failed. Please try again.';
+        console.error('Payment error details:', error?.response?.data || error);
+        
+        setToastVariant('danger');
+        setToastMessage(errorMsg);
+        setShowToast(true);
+        
+        // Update redux state
+        dispatch(paymentResult({ 
+          success: false, 
+          error: errorMsg 
+        }));
+      }
     }
   };
+
+  useEffect(() => {
+    // Handle payment result changes
+    if (lastPaymentResult) {
+      setShowToast(true);
+      if (lastPaymentResult.success) {
+        setToastVariant('success');
+        setToastMessage('Payment successful! Redirecting to your bookings...');
+      } else {
+        setToastVariant('danger');
+        setToastMessage(lastPaymentResult.error || 'Payment failed. Please try again.');
+      }
+    }
+  }, [lastPaymentResult]);
+
+  useEffect(() => {
+    // Restore payment data after login
+    const pendingPayment = sessionStorage.getItem('pendingPayment');
+    if (pendingPayment) {
+      try {
+        const paymentData = JSON.parse(pendingPayment);
+        // Restore the payment data
+        if (paymentData.booking) booking = paymentData.booking;
+        if (paymentData.hotel) hotel = paymentData.hotel;
+        if (paymentData.totalPrice) totalPrice = paymentData.totalPrice;
+        if (paymentData.paymentMethod) setPaymentMethod(paymentData.paymentMethod);
+        if (paymentData.formData) setFormData(paymentData.formData);
+        // Clear the stored data
+        sessionStorage.removeItem('pendingPayment');
+      } catch (error) {
+        console.error('Error restoring payment data:', error);
+        sessionStorage.removeItem('pendingPayment');
+      }
+    }
+  }, []);
 
   if (!hotel || !booking || !totalPrice) {
     return null;

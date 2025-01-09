@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import { Alert, Spinner, Form, InputGroup, Button } from "react-bootstrap";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Container, Form, Button, Alert, Spinner, InputGroup } from "react-bootstrap";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { axiosInstance } from "../Utils/axiosInstance";
 import { URLS } from "../Constants";
-import { setToken } from "../Utils/session";
-import { isLoggedIn, setLoggedInUser } from "../Utils/login";
+import { setToken, setCurrentUser } from "../Utils/session";
+import { isLoggedIn } from "../Utils/login";
 import logo from "../assets/img/logo3.jpg";
 import banner from "../assets/img/hotelbanner.jpg";
 import banner2 from "../assets/img/hotelbanner2.jpg";
@@ -14,11 +14,19 @@ import banner3 from "../assets/img/hotelbanner3.jpg";
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [login, setLogin] = useState({ email: "", password: "" });
+  const [login, setLogin] = useState({
+    email: "",
+    password: "",
+  });
   const [error, setError] = useState("");
   const [submitDisabled, setSubmitDisabled] = useState(false);
-  const [valid, setValid] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [valid, setValid] = useState(true);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setLogin({ ...login, [name]: value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,7 +38,7 @@ const Login = () => {
         throw new Error('Please enter both email and password');
       }
 
-      console.log('Attempting login with:', login);
+      console.log('Sending login request:', { email: login.email });
       const response = await axiosInstance.post(URLS.LOGIN, login);
       console.log('Login response:', response.data);
       
@@ -38,31 +46,82 @@ const Login = () => {
         throw new Error('Invalid response from server');
       }
 
+      // Store token
+      const token = response.data.data;
+      console.log('Setting token:', token);
+      
+      // Verify token format
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        throw new Error('Invalid token format');
+      }
+
       try {
-        // Store token
-        setToken(response.data.data);
-        // Set user data from token
-        const userData = setLoggedInUser();
-        console.log('User data set:', userData);
+        // Decode token
+        const payload = JSON.parse(atob(tokenParts[1]));
+        console.log('Token payload:', payload);
+        
+        if (!payload._id || !payload.email || !payload.roles) {
+          throw new Error('Invalid token payload');
+        }
+
+        // Store user data
+        const userData = {
+          _id: payload._id,
+          email: payload.email,
+          name: payload.name,
+          roles: Array.isArray(payload.roles) ? payload.roles : [payload.roles]
+        };
+        console.log('Setting user data:', userData);
+        
+        // Important: Set token first, then user data atomically
+        sessionStorage.setItem('token', token);
+        sessionStorage.setItem('user', JSON.stringify(userData));
+        
+        // Double check storage
+        const storedToken = sessionStorage.getItem('token');
+        const storedUser = sessionStorage.getItem('user');
+        console.log('Storage check:', {
+          hasToken: !!storedToken,
+          hasUser: !!storedUser
+        });
+        
+        if (!storedToken || !storedUser) {
+          throw new Error('Failed to store auth data');
+        }
+        
+        // Check for pending payment
+        const pendingPayment = sessionStorage.getItem('pendingPayment');
+        if (pendingPayment) {
+          console.log('Found pending payment, redirecting to payment page');
+          navigate('/payment', { 
+            replace: true, 
+            state: JSON.parse(pendingPayment)
+          });
+          return;
+        }
         
         // Redirect based on role
-        if (userData.roles && userData.roles.includes('admin')) {
-          navigate('/admin/dashboard');
+        const isAdmin = userData.roles.includes('admin');
+        console.log('Is admin user:', isAdmin);
+        
+        if (isAdmin) {
+          console.log('Redirecting to admin dashboard');
+          navigate('/admin/dashboard', { replace: true });
         } else {
-          // If there's a redirect path, go there, otherwise go to home
-          const from = location.state?.from?.pathname || "/";
-          navigate(from);
+          const returnPath = location.state?.returnTo || location.state?.from?.pathname || "/";
+          console.log('Redirecting to:', returnPath);
+          navigate(returnPath, { replace: true });
         }
-      } catch (tokenError) {
-        console.error('Error processing login response:', tokenError);
-        setError('Error processing login. Please try again.');
-        setSubmitDisabled(false);
+      } catch (error) {
+        console.error('Error processing token:', error);
+        throw new Error('Invalid token data: ' + error.message);
       }
-    } catch (e) {
-      console.error('Login error:', e.response?.data || e);
+    } catch (error) {
+      console.error('Login error:', error);
+      setError(error?.response?.data?.msg || error.message || "Login failed");
+    } finally {
       setSubmitDisabled(false);
-      const errMsg = e?.response?.data?.msg || e?.message || "Something went wrong";
-      setError(errMsg);
     }
   };
 
@@ -110,11 +169,12 @@ const Login = () => {
                     value={login.email}
                     onChange={(e) => {
                       setValid(true);
-                      setLogin(prev => ({ ...prev, email: e.target.value }));
+                      handleChange(e);
                     }}
                     onBlur={(e) => {
                       setValid(new RegExp(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/).test(e.target.value));
                     }}
+                    name="email"
                     required
                   />
                   <Form.Control.Feedback type="invalid">
@@ -130,9 +190,8 @@ const Login = () => {
                     type={showPassword ? "text" : "password"}
                     placeholder="Password"
                     value={login.password}
-                    onChange={(e) =>
-                      setLogin((prev) => ({ ...prev, password: e.target.value }))
-                    }
+                    onChange={handleChange}
+                    name="password"
                     required
                   />
                   <Button
@@ -161,9 +220,9 @@ const Login = () => {
 
                 <p className="text-center mb-0">
                   Don't have an account?{' '}
-                  <Link to="/register" className="text-primary text-decoration-none">
+                  <a href="/register" className="text-primary text-decoration-none">
                     Create Account
-                  </Link>
+                  </a>
                 </p>
               </Form>
             </div>

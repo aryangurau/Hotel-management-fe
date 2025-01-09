@@ -3,15 +3,17 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Container, Row, Col, Card, Table, Badge, Spinner, Button, Form, Modal } from 'react-bootstrap';
 import { getMyBookings } from '../slices/bookingSlice';
 import moment from 'moment';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { updateUser } from '../slices/authSlice';
+import axiosInstance from '../Utils/axiosInstance';
 
 const Profile = () => {
   const dispatch = useDispatch();
   const { bookings, loading: bookingsLoading } = useSelector((state) => state.booking);
-  const auth = useSelector((state) => state.auth);
-  const user = auth?.user || {};
+  
+  // User State
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Edit Profile State
   const [showEditModal, setShowEditModal] = useState(false);
@@ -24,20 +26,22 @@ const Profile = () => {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    dispatch(getMyBookings());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (user?.name || user?.email) {
+    // Get user data from session storage
+    const userStr = sessionStorage.getItem('user');
+    if (userStr) {
+      const userData = JSON.parse(userStr);
+      setUser(userData);
       setFormData(prev => ({
         ...prev,
-        name: user.name || '',
-        email: user.email || '',
-        password: '',
-        confirmPassword: ''
+        name: userData.name || '',
+        email: userData.email || ''
       }));
     }
-  }, [user?.name, user?.email]);
+    setLoading(false);
+
+    // Fetch bookings
+    dispatch(getMyBookings());
+  }, [dispatch]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -96,69 +100,164 @@ const Profile = () => {
     }
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/users/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${auth.token}`
-        },
-        body: JSON.stringify(updateData)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
-
-      const data = await response.json();
-      toast.success('Profile updated successfully');
-      setShowEditModal(false);
+      const response = await axiosInstance.put('/users/profile', updateData);
       
-      // Update auth state with new user data
-      dispatch(updateUser(data.user));
+      if (response.data?.success) {
+        // Update session storage
+        const updatedUser = { ...user, ...updateData };
+        delete updatedUser.password; // Don't store password
+        sessionStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // Update local state
+        setUser(updatedUser);
+        
+        toast.success('Profile updated successfully');
+        setShowEditModal(false);
+        
+        // Reset password fields
+        setFormData(prev => ({
+          ...prev,
+          password: '',
+          confirmPassword: ''
+        }));
+      } else {
+        throw new Error(response.data?.message || 'Failed to update profile');
+      }
     } catch (error) {
-      toast.error(error.message || 'Failed to update profile');
+      console.error('Error updating profile:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to update profile');
     }
   };
 
-  const getStatusBadgeVariant = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'confirmed':
-        return 'success';
-      case 'cancelled':
-        return 'danger';
-      case 'pending':
-        return 'warning';
-      default:
-        return 'info';
+  const getStatusBadge = (status) => {
+    const variants = {
+      'CONFIRMED': 'success',
+      'PENDING': 'warning',
+      'CANCELLED': 'danger',
+      'COMPLETED': 'info'
+    };
+    return <Badge bg={variants[status] || 'secondary'}>{status}</Badge>;
+  };
+
+  const formatDate = (dateString) => {
+    try {
+      return moment(dateString).format('MMM D, YYYY');
+    } catch (e) {
+      return 'Invalid Date';
     }
   };
 
-  // Calculate booking statistics
-  const stats = bookings?.reduce((acc, booking) => {
-    // Total amount spent
-    acc.totalSpent += booking.amount || 0;
-    
-    // Count by status
-    acc.statusCount[booking.status] = (acc.statusCount[booking.status] || 0) + 1;
-    
-    // Most recent booking
-    const bookingDate = new Date(booking.created_at);
-    if (!acc.lastBooking || bookingDate > new Date(acc.lastBooking.created_at)) {
-      acc.lastBooking = booking;
-    }
-    
-    // Most expensive booking
-    if (!acc.mostExpensive || booking.amount > acc.mostExpensive.amount) {
-      acc.mostExpensive = booking;
-    }
+  if (loading) {
+    return (
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+        <Spinner animation="border" variant="primary" />
+      </Container>
+    );
+  }
 
-    return acc;
-  }, { totalSpent: 0, statusCount: {}, lastBooking: null, mostExpensive: null });
+  if (!user) {
+    return (
+      <Container className="py-4">
+        <Card className="text-center p-5">
+          <Card.Body>
+            <h4>Session Expired</h4>
+            <p className="text-muted">Please log in again to view your profile.</p>
+          </Card.Body>
+        </Card>
+      </Container>
+    );
+  }
 
   return (
-    <>
-      <ToastContainer />
-      
+    <Container className="py-4">
+      <Row>
+        {/* Profile Information */}
+        <Col lg={4} className="mb-4">
+          <Card>
+            <Card.Body>
+              <div className="text-center mb-4">
+                <div className="bg-primary text-white rounded-circle d-inline-flex justify-content-center align-items-center" 
+                     style={{ width: '100px', height: '100px', fontSize: '2.5rem' }}>
+                  {user.name?.charAt(0).toUpperCase()}
+                </div>
+                <h4 className="mt-3 mb-0">{user.name}</h4>
+                <p className="text-muted">{user.email}</p>
+              </div>
+              
+              <div className="d-grid">
+                <Button variant="outline-primary" onClick={() => setShowEditModal(true)}>
+                  Edit Profile
+                </Button>
+              </div>
+
+              <hr />
+
+              <div>
+                <h6 className="text-muted mb-3">Account Information</h6>
+                <p className="mb-2">
+                  <strong>Role:</strong> {user.roles?.join(', ') || 'User'}
+                </p>
+                <p className="mb-2">
+                  <strong>Member Since:</strong> {formatDate(user.createdAt)}
+                </p>
+                <p className="mb-0">
+                  <strong>Last Updated:</strong> {formatDate(user.updatedAt)}
+                </p>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        {/* Recent Bookings */}
+        <Col lg={8}>
+          <Card>
+            <Card.Body>
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <h5 className="mb-0">Recent Bookings</h5>
+                <Badge bg="primary" pill>
+                  {bookings.length} Total
+                </Badge>
+              </div>
+
+              {bookingsLoading ? (
+                <div className="text-center py-4">
+                  <Spinner animation="border" variant="primary" size="sm" />
+                </div>
+              ) : bookings.length === 0 ? (
+                <p className="text-muted text-center mb-0">No bookings found</p>
+              ) : (
+                <div className="table-responsive">
+                  <Table hover className="mb-0">
+                    <thead>
+                      <tr>
+                        <th>Room</th>
+                        <th>Check In</th>
+                        <th>Check Out</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bookings.slice(0, 5).map((booking) => (
+                        <tr key={booking._id}>
+                          <td>{booking.roomId?.name || 'N/A'}</td>
+                          <td>{formatDate(booking.checkIn)}</td>
+                          <td>{formatDate(booking.checkOut)}</td>
+                          <td>
+                            NPR {booking.totalAmount?.toLocaleString()}
+                          </td>
+                          <td>{getStatusBadge(booking.status)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
       {/* Edit Profile Modal */}
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
         <Modal.Header closeButton>
@@ -222,8 +321,8 @@ const Profile = () => {
               </Form.Control.Feedback>
             </Form.Group>
 
-            <div className="d-flex justify-content-end">
-              <Button variant="secondary" className="me-2" onClick={() => setShowEditModal(false)}>
+            <div className="d-flex justify-content-end gap-2">
+              <Button variant="secondary" onClick={() => setShowEditModal(false)}>
                 Cancel
               </Button>
               <Button variant="primary" type="submit">
@@ -233,155 +332,7 @@ const Profile = () => {
           </Form>
         </Modal.Body>
       </Modal>
-
-      <Container className="py-5">
-        <Row>
-          {/* Profile Information */}
-          <Col md={4}>
-            <Card className="mb-4">
-              <Card.Body>
-                <div className="text-center mb-4">
-                  <img
-                    src={user?.avatar || 'https://via.placeholder.com/150'}
-                    alt="Profile"
-                    className="rounded-circle"
-                    style={{ width: '150px', height: '150px', objectFit: 'cover' }}
-                  />
-                  <h3 className="mt-3">{user?.name || 'User'}</h3>
-                  <p className="text-muted">{user?.email}</p>
-                  <Button 
-                    variant="outline-primary" 
-                    size="sm"
-                    onClick={() => setShowEditModal(true)}
-                  >
-                    Edit Profile
-                  </Button>
-                </div>
-                
-                <div>
-                  <h5>Account Details</h5>
-                  <hr />
-                  <p><strong>Role:</strong> {user?.role?.toUpperCase() || 'User'}</p>
-                  <p><strong>Email:</strong> {user?.email || 'Not available'}</p>
-                  {user?.created_at && (
-                    <p><strong>Member Since:</strong> {moment(user.created_at).format('MMMM YYYY')}</p>
-                  )}
-                </div>
-              </Card.Body>
-            </Card>
-
-            {/* Booking Statistics */}
-            <Card>
-              <Card.Body>
-                <h5>Booking Statistics</h5>
-                <hr />
-                <div className="mb-3">
-                  <strong>Total Spent:</strong>
-                  <h4 className="text-success">₹{stats?.totalSpent?.toLocaleString() || '0'}</h4>
-                </div>
-                <div className="mb-3">
-                  <strong>Booking Status:</strong>
-                  <div className="mt-2">
-                    {Object.entries(stats?.statusCount || {}).map(([status, count]) => (
-                      <Badge 
-                        key={status}
-                        bg={getStatusBadgeVariant(status)}
-                        className="me-2 mb-2"
-                        style={{ fontSize: '0.9em' }}
-                      >
-                        {status}: {count}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                {stats?.lastBooking && (
-                  <div className="mb-3">
-                    <strong>Last Booking:</strong>
-                    <p className="mb-1">{moment(stats.lastBooking.created_at).format('MMM D, YYYY')}</p>
-                    <small className="text-muted">{stats.lastBooking.hotelName}</small>
-                  </div>
-                )}
-                {stats?.mostExpensive && (
-                  <div>
-                    <strong>Highest Booking:</strong>
-                    <p className="mb-1">₹{stats.mostExpensive.amount?.toLocaleString()}</p>
-                    <small className="text-muted">{stats.mostExpensive.hotelName}</small>
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
-
-          {/* Booking History */}
-          <Col md={8}>
-            <Card>
-              <Card.Body>
-                <h5>Recent Booking History</h5>
-                <hr />
-                
-                {bookingsLoading ? (
-                  <div className="text-center py-4">
-                    <Spinner animation="border" role="status">
-                      <span className="visually-hidden">Loading...</span>
-                    </Spinner>
-                  </div>
-                ) : bookings && bookings.length > 0 ? (
-                  <div className="table-responsive">
-                    <Table hover>
-                      <thead>
-                        <tr>
-                          <th>Order #</th>
-                          <th>Hotel</th>
-                          <th>Dates</th>
-                          <th>Amount</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {bookings.map((booking) => (
-                          <tr key={booking._id || booking.orderNo}>
-                            <td>
-                              <small>{booking.orderNo}</small>
-                            </td>
-                            <td>
-                              <div>{booking.hotelName || 'Hotel'}</div>
-                              <small className="text-muted">
-                                {booking.roomType || 'Standard Room'}
-                              </small>
-                            </td>
-                            <td>
-                              <div>{moment(booking.arrivalDate).format('MMM D')}</div>
-                              <small className="text-muted">
-                                to {moment(booking.departureDate).format('MMM D, YYYY')}
-                              </small>
-                            </td>
-                            <td>
-                              <div>₹{booking.amount?.toLocaleString()}</div>
-                              <small className="text-muted">
-                                {booking.paymentMethod?.replace('_', ' ').toUpperCase()}
-                              </small>
-                            </td>
-                            <td>
-                              <Badge bg={getStatusBadgeVariant(booking.status)}>
-                                {booking.status}
-                              </Badge>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted mb-0">No booking history found</p>
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
-    </>
+    </Container>
   );
 };
 

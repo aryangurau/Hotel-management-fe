@@ -49,35 +49,35 @@ const AdminOrders = () => {
   };
 
   return (
-    <Container fluid className="mt-4">
-      <Row className="mb-4 align-items-center">
-        <Col>
-          <h2>{isAdmin ? 'All Orders' : 'My Orders'}</h2>
-        </Col>
-        <Col xs="auto">
-          <Form.Select 
-            value={statusFilter} 
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{ width: '200px' }}
-          >
-            <option value="">All Status</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="pending">Pending</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="unpaid">Unpaid</option>
-          </Form.Select>
+    <Container className="py-4">
+      <h2 className="mb-4">Order Management</h2>
+      
+      <Row className="mb-4">
+        <Col md={4}>
+          <Form.Group>
+            <Form.Label>Filter by Status</Form.Label>
+            <Form.Select 
+              value={statusFilter} 
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All Status</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="pending">Pending</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="unpaid">Unpaid</option>
+            </Form.Select>
+          </Form.Group>
         </Col>
       </Row>
 
       {loading ? (
-        <div className="text-center py-4">Loading...</div>
-      ) : orders && orders.length > 0 ? (
+        <div className="text-center">Loading orders...</div>
+      ) : (
         <>
           <Table responsive striped bordered hover>
             <thead>
               <tr>
-                <th>Order Number</th>
-                <th>Hotel</th>
+                <th>Order No.</th>
                 <th>Room</th>
                 <th>Check In</th>
                 <th>Check Out</th>
@@ -90,14 +90,13 @@ const AdminOrders = () => {
             <tbody>
               {orders.map((order) => (
                 <tr key={order._id}>
-                  <td>{order.orderNumber}</td>
-                  <td>{order.hotel}</td>
-                  <td>{order.room}</td>
+                  <td>{order.orderNo}</td>
+                  <td>{order.room?.name || 'N/A'}</td>
                   <td>{new Date(order.checkIn).toLocaleDateString()}</td>
                   <td>{new Date(order.checkOut).toLocaleDateString()}</td>
-                  <td>Rs. {order.totalPrice.toLocaleString()}</td>
+                  <td>${order.totalPrice}</td>
                   <td>{getStatusBadge(order.status)}</td>
-                  <td>{order.created_by}</td>
+                  <td>{order.created_by?.email || 'N/A'}</td>
                   <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
@@ -124,7 +123,7 @@ const AdminOrders = () => {
                   {idx + 1}
                 </Pagination.Item>
               ))}
-              
+
               <Pagination.Next 
                 disabled={page === totalPages} 
                 onClick={() => handlePageChange(page + 1)}
@@ -136,8 +135,6 @@ const AdminOrders = () => {
             </Pagination>
           </div>
         </>
-      ) : (
-        <div className="text-center py-4">No orders found</div>
       )}
     </Container>
   );

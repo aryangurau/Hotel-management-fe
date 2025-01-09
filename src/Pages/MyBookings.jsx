@@ -22,21 +22,25 @@ const MyBookings = () => {
   const fetchBookings = async () => {
     try {
       console.log('Fetching bookings...');
-      const response = await axiosInstance.get('/bookings', {
-        params: {
-          populate: 'roomId'
-        }
-      });
+      // Get user data from session storage
+      const userStr = sessionStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('User session not found');
+      }
+      const user = JSON.parse(userStr);
+      
+      // Fetch bookings for the current user
+      const response = await axiosInstance.get(`/bookings/user/${user._id}`);
       console.log('Bookings response:', response.data);
       
-      if (response.data?.success) {
+      if (response.data?.data) {
         setBookings(response.data.data);
       } else {
         throw new Error('Failed to fetch bookings');
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
-      toast.error(error.response?.data?.message || 'Failed to fetch bookings');
+      toast.error(error.response?.data?.message || error.message || 'Failed to fetch bookings');
     } finally {
       setLoading(false);
     }
@@ -46,7 +50,8 @@ const MyBookings = () => {
     const variants = {
       'CONFIRMED': 'success',
       'PENDING': 'warning',
-      'CANCELLED': 'danger'
+      'CANCELLED': 'danger',
+      'COMPLETED': 'info'
     };
     return <Badge bg={variants[status] || 'secondary'}>{status}</Badge>;
   };
@@ -57,6 +62,13 @@ const MyBookings = () => {
     } catch (e) {
       return 'Invalid Date';
     }
+  };
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'NPR'
+    }).format(price);
   };
 
   const handleFilterChange = (field, value) => {
@@ -101,16 +113,14 @@ const MyBookings = () => {
 
   if (loading) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+        <Spinner animation="border" variant="primary" />
       </Container>
     );
   }
 
   return (
-    <Container className="py-5">
+    <Container className="py-4">
       <h2 className="mb-4">My Bookings</h2>
 
       {/* Filters */}
@@ -124,16 +134,17 @@ const MyBookings = () => {
                   value={filters.status}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
                 >
-                  <option value="ALL">All Status</option>
+                  <option value="ALL">All</option>
                   <option value="CONFIRMED">Confirmed</option>
                   <option value="PENDING">Pending</option>
                   <option value="CANCELLED">Cancelled</option>
+                  <option value="COMPLETED">Completed</option>
                 </Form.Select>
               </Form.Group>
             </Col>
             <Col md={3}>
               <Form.Group>
-                <Form.Label>Check-in From</Form.Label>
+                <Form.Label>From Date</Form.Label>
                 <Form.Control
                   type="date"
                   value={filters.startDate}
@@ -143,7 +154,7 @@ const MyBookings = () => {
             </Col>
             <Col md={3}>
               <Form.Group>
-                <Form.Label>Check-out To</Form.Label>
+                <Form.Label>To Date</Form.Label>
                 <Form.Control
                   type="date"
                   value={filters.endDate}
@@ -157,7 +168,7 @@ const MyBookings = () => {
                 <InputGroup>
                   <Form.Control
                     type="text"
-                    placeholder="Search rooms..."
+                    placeholder="Search bookings..."
                     value={filters.searchTerm}
                     onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
                   />
@@ -171,57 +182,44 @@ const MyBookings = () => {
         </Card.Body>
       </Card>
 
-      {/* Results */}
+      {/* Bookings List */}
       {filteredBookings.length === 0 ? (
-        <div className="text-center text-muted">
-          <p>No bookings found</p>
-        </div>
+        <Card className="text-center p-5">
+          <Card.Body>
+            <h4>No bookings found</h4>
+            <p className="text-muted">You haven't made any bookings yet.</p>
+          </Card.Body>
+        </Card>
       ) : (
-        <Row xs={1} className="g-4">
+        <Row xs={1} md={2} lg={3} className="g-4">
           {filteredBookings.map((booking) => (
             <Col key={booking._id}>
               <Card>
                 <Card.Body>
-                  <div className="d-flex justify-content-between align-items-start">
-                    <div>
-                      <h5 className="mb-1">
-                        {booking.roomId?.name || 'Room Unavailable'}
-                        {' '}
-                        {getStatusBadge(booking.status)}
-                      </h5>
-                      <p className="text-muted mb-2">
-                        {booking.roomId?.type?.charAt(0).toUpperCase() + booking.roomId?.type?.slice(1)} Room
-                      </p>
-                    </div>
-                    <h5 className="mb-0">NPR {booking.totalAmount?.toLocaleString()}</h5>
-                  </div>
-                  
-                  <div className="row mt-3">
-                    <div className="col-md-6">
-                      <div className="mb-2">
-                        <strong>Check-in:</strong> {formatDate(booking.checkIn)}
-                      </div>
-                      <div className="mb-2">
-                        <strong>Check-out:</strong> {formatDate(booking.checkOut)}
-                      </div>
-                      <div className="mb-2">
-                        <strong>Room Type:</strong> {booking.roomId?.type?.charAt(0).toUpperCase() + booking.roomId?.type?.slice(1)}
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="mb-2">
-                        <strong>Booking Date:</strong> {formatDate(booking.createdAt)}
-                      </div>
-                      <div className="mb-2">
-                        <strong>Booking ID:</strong> {booking._id}
-                      </div>
-                      {booking.status === 'CANCELLED' && booking.cancellationReason && (
-                        <div className="text-danger">
-                          <strong>Cancellation Reason:</strong> {booking.cancellationReason}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <Card.Title className="d-flex justify-content-between align-items-center">
+                    <span>Booking #{booking._id.slice(-6)}</span>
+                    {getStatusBadge(booking.status)}
+                  </Card.Title>
+                  <Card.Text as="div">
+                    <p className="mb-1">
+                      <strong>Room:</strong> {booking.roomId?.name || 'N/A'}
+                    </p>
+                    <p className="mb-1">
+                      <strong>Check In:</strong> {formatDate(booking.checkIn)}
+                    </p>
+                    <p className="mb-1">
+                      <strong>Check Out:</strong> {formatDate(booking.checkOut)}
+                    </p>
+                    <p className="mb-1">
+                      <strong>Guests:</strong> {booking.guests}
+                    </p>
+                    <p className="mb-1">
+                      <strong>Amount:</strong> {formatPrice(booking.totalAmount)}
+                    </p>
+                    <p className="mb-1">
+                      <strong>Payment:</strong> {booking.paymentMethod}
+                    </p>
+                  </Card.Text>
                 </Card.Body>
               </Card>
             </Col>

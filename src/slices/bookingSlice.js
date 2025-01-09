@@ -1,29 +1,32 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosInstance from '../Utils/axiosInstance';
-import { getToken } from '../Utils/session';
 
 // Async thunk for fetching bookings
 export const getMyBookings = createAsyncThunk(
     'booking/getMyBookings',
     async (_, { rejectWithValue }) => {
         try {
+            // Get user data from session storage
+            const userStr = sessionStorage.getItem('user');
+            if (!userStr) {
+                throw new Error('User session not found');
+            }
+            const user = JSON.parse(userStr);
+            
             // Debug logs
-            console.log('Starting to fetch bookings');
-            const token = getToken();
-            console.log('Current token:', token);
+            console.log('Fetching bookings for user:', user._id);
             
-            const response = await axiosInstance.get('/bookings', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await axiosInstance.get(`/bookings/user/${user._id}`);
+            console.log('Bookings API Response:', response.data);
             
-            console.log('Bookings API Response:', response);
+            if (!response.data?.data) {
+                throw new Error('Invalid response format');
+            }
+            
             return response.data.data;
         } catch (error) {
             console.error('Error fetching bookings:', error);
-            console.error('Error response:', error.response);
-            return rejectWithValue(error.response?.data?.message || 'Failed to fetch bookings');
+            return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch bookings');
         }
     }
 );
@@ -33,12 +36,7 @@ export const createBooking = createAsyncThunk(
     'booking/createBooking',
     async (bookingData, { rejectWithValue }) => {
         try {
-            const token = getToken();
-            const response = await axiosInstance.post('/bookings', bookingData, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await axiosInstance.post('/bookings', bookingData);
             return response.data.data;
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || 'Failed to create booking');
@@ -62,6 +60,11 @@ const bookingSlice = createSlice({
         },
         clearSelectedBooking: (state) => {
             state.selectedBooking = null;
+        },
+        clearBookings: (state) => {
+            state.bookings = [];
+            state.selectedBooking = null;
+            state.error = null;
         }
     },
     extraReducers: (builder) => {
@@ -94,5 +97,5 @@ const bookingSlice = createSlice({
     }
 });
 
-export const { setSelectedBooking, clearSelectedBooking } = bookingSlice.actions;
+export const { setSelectedBooking, clearSelectedBooking, clearBookings } = bookingSlice.actions;
 export default bookingSlice.reducer;
