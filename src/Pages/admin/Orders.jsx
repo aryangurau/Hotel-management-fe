@@ -11,7 +11,7 @@ const AdminOrders = () => {
   const navigate = useNavigate();
   const { orders = [], loading, error, currentPage, totalPages, total } = useSelector((state) => state.orders);
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState('');
   
   useEffect(() => {
@@ -180,13 +180,15 @@ const AdminOrders = () => {
                         <FaUser className="me-2" />Customer Details
                       </h6>
                       <p className="mb-1">
-                        <strong>{order.customer.name}</strong>
+                        <strong>{order.customer?.name || 'N/A'}</strong>
                       </p>
                       <p className="mb-1 small">
-                        <FaEnvelope className="me-1" />{order.customer.email}
+                        <FaEnvelope className="me-1" />
+                        {order.customer?.email || 'N/A'}
                       </p>
                       <p className="mb-1 small">
-                        <FaPhone className="me-1" />{order.customer.phone}
+                        <FaPhone className="me-1" />
+                        {order.customer?.phone || 'N/A'}
                       </p>
                     </Col>
                     <Col md={4}>
@@ -241,8 +243,11 @@ const AdminOrders = () => {
           </div>
 
           {totalPages > 1 && (
-            <div className="d-flex justify-content-center mt-4">
-              <Pagination>
+            <div className="d-flex justify-content-between align-items-center mt-4">
+              <div className="text-muted small">
+                Showing {orders.length} of {total} orders | Page {currentPage} of {totalPages}
+              </div>
+              <Pagination className="mb-0">
                 <Pagination.First 
                   onClick={() => handlePageChange(1)} 
                   disabled={currentPage === 1}
@@ -252,16 +257,41 @@ const AdminOrders = () => {
                   disabled={currentPage === 1}
                 />
                 
-                {[...Array(totalPages)].map((_, idx) => (
-                  <Pagination.Item
-                    key={idx + 1}
-                    active={idx + 1 === currentPage}
-                    onClick={() => handlePageChange(idx + 1)}
-                  >
-                    {idx + 1}
-                  </Pagination.Item>
-                ))}
+                {/* Show first page */}
+                {currentPage > 2 && (
+                  <Pagination.Item onClick={() => handlePageChange(1)}>1</Pagination.Item>
+                )}
                 
+                {/* Show ellipsis if needed */}
+                {currentPage > 3 && <Pagination.Ellipsis />}
+                
+                {/* Show previous page if not first */}
+                {currentPage > 1 && (
+                  <Pagination.Item onClick={() => handlePageChange(currentPage - 1)}>
+                    {currentPage - 1}
+                  </Pagination.Item>
+                )}
+                
+                {/* Current page */}
+                <Pagination.Item active>{currentPage}</Pagination.Item>
+                
+                {/* Show next page if not last */}
+                {currentPage < totalPages && (
+                  <Pagination.Item onClick={() => handlePageChange(currentPage + 1)}>
+                    {currentPage + 1}
+                  </Pagination.Item>
+                )}
+                
+                {/* Show ellipsis if needed */}
+                {currentPage < totalPages - 2 && <Pagination.Ellipsis />}
+                
+                {/* Show last page */}
+                {currentPage < totalPages - 1 && (
+                  <Pagination.Item onClick={() => handlePageChange(totalPages)}>
+                    {totalPages}
+                  </Pagination.Item>
+                )}
+
                 <Pagination.Next
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
@@ -271,6 +301,17 @@ const AdminOrders = () => {
                   disabled={currentPage === totalPages}
                 />
               </Pagination>
+              <Form.Select 
+                style={{ width: 'auto' }}
+                value={limit}
+                onChange={(e) => setLimit(parseInt(e.target.value))}
+                className="ms-3"
+              >
+                <option value={5}>5 per page</option>
+                <option value={10}>10 per page</option>
+                <option value={25}>25 per page</option>
+                <option value={50}>50 per page</option>
+              </Form.Select>
             </div>
           )}
 
