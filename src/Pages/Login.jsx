@@ -30,17 +30,20 @@ const Login = () => {
         throw new Error('Please enter both email and password');
       }
 
+      console.log('Attempting login with:', login);
       const response = await axiosInstance.post(URLS.LOGIN, login);
+      console.log('Login response:', response.data);
       
-      if (!response?.data?.data?.token) {
+      if (!response?.data?.data) {
         throw new Error('Invalid response from server');
       }
 
       try {
         // Store token
-        setToken(response.data.data.token);
+        setToken(response.data.data);
         // Set user data from token
         const userData = setLoggedInUser();
+        console.log('User data set:', userData);
         
         // Redirect based on role
         if (userData.roles && userData.roles.includes('admin')) {
@@ -56,7 +59,7 @@ const Login = () => {
         setSubmitDisabled(false);
       }
     } catch (e) {
-      console.error('Login error:', e);
+      console.error('Login error:', e.response?.data || e);
       setSubmitDisabled(false);
       const errMsg = e?.response?.data?.msg || e?.message || "Something went wrong";
       setError(errMsg);
