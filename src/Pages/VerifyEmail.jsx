@@ -1,15 +1,13 @@
 import { useState, useEffect } from "react";
 import { Alert, Spinner } from "react-bootstrap";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-
 import { axiosInstance } from "../Utils/axiosInstance";
 import { URLS } from "../Constants";
 
-// import "./register.css";
-import logo from "../assets/img/logo3.jpg";
 import banner from "../assets/img/hotelbanner.jpg";
 import banner2 from "../assets/img/hotelbanner2.jpg";
 import banner3 from "../assets/img/hotelbanner3.jpg";
+import logo from "../assets/img/logo3.jpg";
 
 const VerifyEmail = () => {
   const { state } = useLocation();

@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { Alert } from "react-bootstrap";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-
 import { axiosInstance } from "../Utils/axiosInstance";
 import { URLS } from "../Constants";
 
 import "./css/forgetpw.css"
-import "./login.css";
 import banner from "../assets/img/hotelbanner.jpg";
 import banner2 from "../assets/img/hotelbanner2.jpg";
 import banner3 from "../assets/img/hotelbanner3.jpg";

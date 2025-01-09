@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { axiosInstance } from "../Utils/axiosInstance";
+import axiosInstance from "../Utils/axiosInstance";
 import { URLS } from "../Constants";
 import { Alert, Spinner, Form, InputGroup, Button } from "react-bootstrap";
 import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';

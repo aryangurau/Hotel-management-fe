@@ -15,30 +15,31 @@ import NotFound from "./Pages/NotFound";
 import AdminUsers from "./Pages/admin/Users";
 import AdminOrders from "./Pages/admin/Orders";
 import AdminRooms from "./Pages/admin/rooms/Rooms";
-import AdminRoomsCreate from "./pages/admin/rooms/Create";
+import AdminRoomsCreate from "./Pages/admin/rooms/Create";
+import AdminRoomEdit from "./Pages/admin/rooms/Edit";
 import AdminProfile from "./Pages/admin/Profile";
 import UserProfile from "./Pages/user/Profile";
 import Booking from "./Pages/Booking";
 import Cart from "./Pages/Cart";
-import AdminRoomEdit from "./Pages/admin/rooms/Edit";
 import Payment from "./Pages/Payment";
 import MyBookings from "./Pages/MyBookings";
 import Profile from "./Pages/Profile";
+import BookingHistory from "./Pages/BookingHistory";
 
 const App = () => {
   return (
     <>
       <ToastContainer
         position="top-right"
-        autoClose={3000}
+        autoClose={5000}
         hideProgressBar={false}
-        newestOnTop={false}
+        newestOnTop={true}
         closeOnClick
         rtl={false}
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme="light"
+        theme="colored"
       />
       <Routes>
         {/* Separate routes for login, forget password, and signup */}
@@ -47,16 +48,17 @@ const App = () => {
         <Route path="/verify" element={<VerifyEmail/>} />
         <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/forget-password/verifyFp" element={<VerifyFp/>} />
-       
+
         {/* User Routes */}
         <Route path="/" element={<UserLayout />}>
           <Route index element={<Home />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="cart" element={<Cart />} />
-          <Route path="booking" element={<Booking />} />
-          <Route path="booking/:roomId" element={<Booking />} />
-          <Route path="payment" element={<Payment />} />
-          <Route path="my-bookings" element={<MyBookings />} />
+          <Route path="profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="cart" element={<PrivateRoute><Cart /></PrivateRoute>} />
+          <Route path="booking" element={<PrivateRoute><Booking /></PrivateRoute>} />
+          <Route path="booking/:roomId" element={<PrivateRoute><Booking /></PrivateRoute>} />
+          <Route path="payment" element={<PrivateRoute><Payment /></PrivateRoute>} />
+          <Route path="my-bookings" element={<PrivateRoute><MyBookings /></PrivateRoute>} />
+          <Route path="booking-history" element={<PrivateRoute><BookingHistory /></PrivateRoute>} />
         </Route>
 
         {/* Admin Routes */}
@@ -69,12 +71,11 @@ const App = () => {
           }
         >
           <Route index element={<AdminDashboard />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="rooms" element={<AdminRooms />} />
           <Route path="rooms/create" element={<AdminRoomsCreate />} />
-          <Route path="rooms/edit/:roomId" element={<AdminRoomEdit />} />
+          <Route path="rooms/edit/:id" element={<AdminRoomEdit />} />
           <Route path="profile" element={<AdminProfile />} />
         </Route>
 

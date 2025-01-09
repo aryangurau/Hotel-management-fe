@@ -19,21 +19,22 @@ import orderReducer from "../slices/orderSlice";
 import bookingReducer from "../slices/bookingSlice";
 
 const persistConfig = {
-  key: "cart",
+  key: "root",
   storage,
   stateReconciler: autoMergeLevel2,
+  whitelist: ['cart', 'user'] // Only persist cart and user state
 };
 
-const persistedCart = persistReducer(persistConfig, cartReducer);
+const persistedReducers = {
+  cart: persistReducer({ ...persistConfig, key: 'cart' }, cartReducer),
+  rooms: roomReducer,
+  users: userReducer,
+  orders: orderReducer,
+  booking: bookingReducer
+};
 
 export const store = configureStore({
-  reducer: {
-    cart: persistedCart,
-    rooms: roomReducer,
-    users: userReducer,
-    orders: orderReducer,
-    booking: bookingReducer,
-  },
+  reducer: persistedReducers,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
@@ -43,4 +44,4 @@ export const store = configureStore({
   devTools: true,
 });
 
-export const newStore = persistStore(store);
+export const persistor = persistStore(store);

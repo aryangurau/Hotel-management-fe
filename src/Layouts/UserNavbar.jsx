@@ -134,6 +134,10 @@ const UserNavbar = () => {
                               <i className="fas fa-calendar-check me-2"></i>
                               My Bookings
                             </Dropdown.Item>
+                            <Dropdown.Item as={Link} to="/booking-history">
+                              <i className="fas fa-history me-2"></i>
+                              Booking History
+                            </Dropdown.Item>
                             {isAdmin && (
                               <>
                                 <Dropdown.Item onClick={handleDashboardClick}>

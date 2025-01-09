@@ -10,6 +10,7 @@ import { useDispatch } from 'react-redux';
 import { addToCart } from '../slices/cartSlice';
 import { toast } from 'react-toastify';
 import Banner from '../components/Banner';
+import Payment from '../Components/Payment';
 import './css/home.css';
 import './css/modal.css';
 
@@ -37,6 +38,7 @@ const ROOM_IMAGES = {
 const Home = () => {
   const [showModal, setShowModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [roomsPerPage] = useState(6);
@@ -86,9 +88,53 @@ const Home = () => {
   };
 
   const handleBookingSubmit = () => {
-    // Implement booking submission logic
-    console.log('Booking submitted:', { selectedRoom, bookingDetails });
+    if (!bookingDetails.checkIn || !bookingDetails.checkOut) {
+      toast.error('Please select check-in and check-out dates');
+      return;
+    }
+
+    const checkIn = new Date(bookingDetails.checkIn);
+    const checkOut = new Date(bookingDetails.checkOut);
+
+    if (checkIn >= checkOut) {
+      toast.error('Check-out date must be after check-in date');
+      return;
+    }
+
+    // Calculate number of nights
+    const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+    
+    if (nights <= 0) {
+      toast.error('Invalid date range');
+      return;
+    }
+
+    // Calculate total amount
+    const totalAmount = selectedRoom.price * nights;
+
+    // Update booking details with calculated amount
+    setBookingDetails(prev => ({
+      ...prev,
+      nights,
+      totalAmount
+    }));
+
+    // Close booking modal and show payment modal
     setShowBookingModal(false);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    // Reset all modals and show success message
+    setShowPaymentModal(false);
+    setSelectedRoom(null);
+    setBookingDetails({
+      checkIn: '',
+      checkOut: '',
+      guests: 1,
+      rooms: 1
+    });
+    toast.success('Booking confirmed successfully!');
   };
 
   // Filter rooms based on selected category
@@ -328,6 +374,25 @@ const Home = () => {
         </Modal.Footer>
       </Modal>
 
+      {/* Payment Modal */}
+      <Payment 
+        show={showPaymentModal}
+        handleClose={() => setShowPaymentModal(false)}
+        amount={bookingDetails.totalAmount || (selectedRoom?.price || 0)}
+        onPaymentSuccess={() => {
+          toast.success('Booking confirmed successfully!');
+          setBookingDetails({
+            checkIn: '',
+            checkOut: '',
+            guests: 1,
+            rooms: 1
+          });
+          navigate('/booking-history');
+        }}
+        selectedRoom={selectedRoom}
+        bookingDetails={bookingDetails}
+      />
+
       {/* Booking Modal */}
       <Modal show={showBookingModal} onHide={() => setShowBookingModal(false)}>
         <Modal.Header closeButton>
@@ -400,7 +465,7 @@ const Home = () => {
             onClick={handleBookingSubmit}
             disabled={!bookingDetails.checkIn || !bookingDetails.checkOut || bookingDetails.guests < 1}
           >
-            Confirm Booking
+            Proceed to Payment
           </Button>
         </Modal.Footer>
       </Modal>
