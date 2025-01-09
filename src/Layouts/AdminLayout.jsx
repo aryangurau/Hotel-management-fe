@@ -1,27 +1,38 @@
+import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
-// import UserFooter from "./UserFooter";
 import AdminNavbar from "./AdminNavbar";
 import AdminFooter from "./AdminFooter";
+import "./css/admin.css";
 
 const AdminLayout = () => {
-  return (
-    <>
-      <div className="d-flex vh-100 overflow-hidden">
-        <AdminNavbar />
-        <div className="container-fluid" style={{ minHeight: "48rem" }}>
-          <div className="container-fluid" style={{ minHeight: "53rem" }}>
-            <div className="container">
-              <Outlet />
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(window.innerWidth < 992);
 
-            </div>
-            <div className="col-lg " style={{"marginTop": "290px"}}>
-            <AdminFooter />
-            </div>
-          </div>
-         
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 992) {
+        setIsSidebarCollapsed(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <div className="admin-layout">
+      <AdminNavbar isCollapsed={isSidebarCollapsed} onToggle={setIsSidebarCollapsed} />
+      <div 
+        className="admin-main"
+        style={{
+          marginLeft: isSidebarCollapsed ? "0" : "280px",
+        }}
+      >
+        <div className="admin-content">
+          <Outlet />
         </div>
+        <AdminFooter />
       </div>
-    </>
+    </div>
   );
 };
 

@@ -2,9 +2,8 @@ import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { axiosInstance } from "../Utils/axiosInstance";
 import { URLS } from "../Constants";
-import { Alert, Spinner } from "react-bootstrap";
-// import { isLoggedIn } from "../Utils/login";
-// import "./register.css";
+import { Alert, Spinner, Form, InputGroup, Button } from "react-bootstrap";
+import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import logo from "../assets/img/logo3.jpg";
 import banner from "../assets/img/hotelbanner.jpg";
 import banner2 from "../assets/img/hotelbanner2.jpg";
@@ -14,38 +13,27 @@ const Register = () => {
   const registerRef = useRef();
   const navigate = useNavigate();
   const [submitDisabled, setSubmitDisabled] = useState(false);
-  const [error, setError] = useState(""); // State for error message
+  const [error, setError] = useState("");
   const [validPw, setValidPw] = useState(true);
   const [validEmail, setValidEmail] = useState(true);
-  const [email, setEmail] = useState({email:""});
-
-  const showHide = () => {
-    const pass = document.getElementById("pass");
-    const repeatPass = document.getElementById("repeatPass");
-    if (pass.type === "password" || repeatPass.type === "Password") {
-      pass.type = "text";
-      repeatPass.type = "text";
-    } else {
-      pass.type = "password";
-      repeatPass.type = "password";
-    }
-  };
+  const [email, setEmail] = useState({ email: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Clear error before new attempt
+    setError("");
 
     try {
       const rawFormData = registerRef.current;
       const formData = new FormData(rawFormData);
-      console.log({ formData });
       formData.delete("confirmPassword");
       setSubmitDisabled(true);
+      
       const { data } = await axiosInstance.post(
         `${URLS.USERS}/register`,
         formData
       );
-      console.log({ data });
 
       if (data.msg === "please check your email for verification") {
         setSubmitDisabled(false);
@@ -54,285 +42,212 @@ const Register = () => {
     } catch (e) {
       setSubmitDisabled(false);
       const errMsg = e?.response?.data?.msg || "Something went wrong";
-      setError(errMsg); // Set the error message in state
+      setError(errMsg);
     }
   };
-  // useEffect(() => {
-  //   if (isLoggedIn()) {
-  //     navigate("/");
-  //   }
-  // }, [navigate]);
 
   return (
-    <>
-      <section className="d-flex justify-content-center align-items-center min-vh-100">
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-lg-6 col-md-8">
-              <div className="card-body">
-                <div id="carouselExampleCaptions" className="carousel slide ">
-                  <div className="carousel-indicators">
-                    <button
-                      type="button"
-                      data-bs-target="#carouselExampleCaptions"
-                      data-bs-slide-to={0}
-                      className="active"
-                      aria-current="true"
-                      aria-label="Slide 1"
-                    />
-                    <button
-                      type="button"
-                      data-bs-target="#carouselExampleCaptions"
-                      data-bs-slide-to={1}
-                      aria-label="Slide 2"
-                    />
-                    <button
-                      type="button"
-                      data-bs-target="#carouselExampleCaptions"
-                      data-bs-slide-to={2}
-                      aria-label="Slide 3"
-                    />
-                  </div>
-                  <div className="carousel-inner">
-                    <div className="carousel-item active">
-                      <img
-                        src={banner}
-                        style={{ width: "700px", height: "630px" }}
-                        className=" "
-                        alt="..."
-                      />
-                      <div className="carousel-caption d-none d-md-block">
-                        <h5>Explore Our Hotels</h5>
-                        <p>We provide best quality services</p>
-                      </div>
-                    </div>
-                    <div className="carousel-item">
-                      <img
-                        src={banner2}
-                        style={{ width: "700px", height: "630px" }}
-                        className="d-block "
-                        alt="..."
-                      />
-                      <div className="carousel-caption d-none d-md-block">
-                        <h5>Explore Our Hotels</h5>
-                        <p>We provide best quality services</p>
-                      </div>
-                    </div>
-                    <div className="carousel-item">
-                      <img
-                        src={banner3}
-                        style={{ width: "700px", height: "630px" }}
-                        className="d-block w-100"
-                        alt="..."
-                      />
-                      <div className="carousel-caption d-none d-md-block">
-                        <h5>Explore Our Hotels</h5>
-                        <p>We provide best quality services</p>
-                      </div>
+    <section className="register-section">
+      <div className="container">
+        <div className="row g-0 shadow-lg rounded-4 overflow-hidden">
+          <div className="col-lg-6 p-0 d-none d-lg-block">
+            <div className="register-carousel h-100">
+              <div id="registerCarousel" className="carousel slide carousel-fade h-100" data-bs-ride="carousel">
+                <div className="carousel-indicators">
+                  <button
+                    type="button"
+                    data-bs-target="#registerCarousel"
+                    data-bs-slide-to="0"
+                    className="active"
+                    aria-current="true"
+                    aria-label="Slide 1"
+                  />
+                  <button
+                    type="button"
+                    data-bs-target="#registerCarousel"
+                    data-bs-slide-to="1"
+                    aria-label="Slide 2"
+                  />
+                  <button
+                    type="button"
+                    data-bs-target="#registerCarousel"
+                    data-bs-slide-to="2"
+                    aria-label="Slide 3"
+                  />
+                </div>
+                <div className="carousel-inner h-100">
+                  <div className="carousel-item active h-100">
+                    <img src={banner} className="w-100 h-100 object-fit-cover" alt="Hotel view" />
+                    <div className="carousel-caption">
+                      <h3>Welcome to XYZ Hotel</h3>
+                      <p>Experience luxury and comfort at its finest</p>
                     </div>
                   </div>
-                  <button
-                    className="carousel-control-prev"
-                    type="button"
-                    data-bs-target="#carouselExampleCaptions"
-                    data-bs-slide="prev"
-                  >
-                    <span
-                      className="carousel-control-prev-icon"
-                      aria-hidden="true"
-                    />
-                    <span className="visually-hidden">Previous</span>
-                  </button>
-                  <button
-                    className="carousel-control-next"
-                    type="button"
-                    data-bs-target="#carouselExampleCaptions"
-                    data-bs-slide="next"
-                  >
-                    <span
-                      className="carousel-control-next-icon"
-                      aria-hidden="true"
-                    />
-                    <span className="visually-hidden">Next</span>
-                  </button>
+                  <div className="carousel-item h-100">
+                    <img src={banner2} className="w-100 h-100 object-fit-cover" alt="Hotel interior" />
+                    <div className="carousel-caption">
+                      <h3>Premium Amenities</h3>
+                      <p>Discover our world-class facilities</p>
+                    </div>
+                  </div>
+                  <div className="carousel-item h-100">
+                    <img src={banner3} className="w-100 h-100 object-fit-cover" alt="Hotel room" />
+                    <div className="carousel-caption">
+                      <h3>Your Home Away From Home</h3>
+                      <p>Creating memorable stays since 2000</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="col-lg-6 col-md-8">
-              <div className="card shadow-sm">
-                <div className="card-body">
-                  <form
-                    ref={registerRef}
-                    className="form needs-validation"
-                    onSubmit={(e) => handleSubmit(e)}
-                  >
-                    <div className="text-center mb-4">
-                      <img className="img-logo" src={logo} alt="Logo" />
-                      <h4 className="mt-3">Register</h4>
-                      {/* Display the Alert component below the heading */}
-                      {error && (
-                        <Alert variant="danger" className="mt-2">
-                          {error}
-                        </Alert>
-                      )}
-                    </div>
-                    <div className="mb-1">
-                      <input
-                        className="form-control"
-                        name="name"
-                        placeholder="Enter name"
-                        required
-                      />
-                    </div>
-
-                    <div className="mb-1">
-                      <input
-                        type="email"
-                        className={`form-control ${
-                          validEmail ? "" : "is-invalid"
-                        }`}
-                        id="email"
-                        name="email"
-                        placeholder="Enter email"
-                        value={email.email}
-                        onChange={(e) => {
-                          setValidEmail(true);
-                          setEmail((prev) => {
-                            return {
-                              ...prev,
-                              email: e.target.value,
-                            };
-                          });
-                        }}
-                        onBlur={(e) => {
-                          new RegExp(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/).test(
-                            e.target.value
-                          )
-                            ? setValidEmail(true)
-                            : setValidEmail(false);
-                        }}
-                        required
-                      />
-                      <div className="invalid-feedback">
-                        Please provide proper email
-                      </div>
-                    </div>
-
-                    <div className="mb-1">
-                      <input
-                        type="password"
-                        className={`form-control ${
-                          validPw ? "" : "is-invalid"
-                        }`}
-                        id="pass"
-                        name="password"
-                        placeholder="Password"
-                        autoComplete="off"
-
-
-                        onChange={() => {
-                          setValidPw(true);
-                        
-                        }}
-
-                        onBlur={(e) => {
-                          new RegExp(
-                            /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10}$/
-                          ).test(e.target.value)
-                            ? setValidPw(true)
-                            : setValidPw(false);
-                        }}
-                        required
-                      />
-                      <div className="invalid-feedback">
-                        password must contain
-                        <ul>
-                          <li>A capital letter</li>
-                          <li>A special character /@,!,*,%,$,#/</li>
-                          <li>A number</li>
-                        </ul>
-                        and 10 characters long
-                      </div>
-                    </div>
-
-                    <div className="mb-3">
-                      <input
-                        type="password"
-                        className="form-control"
-                        id="repeatPass"
-                        name="confirmPassword"
-                        placeholder="Repeat Password"
-                        autoComplete="off"
-                        required
-                      />
-                    </div>
-
-                    {/* Aligned checkboxes */}
-                    <div className="mb-1 form-check ">
-                      <input
-                        type="checkbox"
-                        className="form-check-input mt-1"
-                        id="showPasswordCheck"
-                        onClick={showHide}
-                      />
-                      <label
-                        className="form-check-label"
-                        htmlFor="showPasswordCheck"
-                      >
-                        Show Password
-                      </label>
-                    </div>
-
-                    <div className="mb-2 form-check">
-                      <input
-                        type="checkbox"
-                        className="form-check-input mt-1"
-                        id="exampleCheck1"
-                        required
-                      />
-                      <label className="form-check-label" htmlFor="termsCheck">
-                        I accept the terms & conditions
-                      </label>
-                    </div>
-
-                    <div className="text-center">
-                      <button
-                        // type="submit"
-                        className="btn btn-primary w-100"
-                        disabled={submitDisabled}
-                      >
-                        {" "}
-                        {submitDisabled && (
-                          <Spinner
-                            animation="border"
-                            variant="light"
-                            size="sm"
-                            className="mx-1"
-                          />
-                        )}
-                        Register
-                      </button>
-                    </div>
-                    <div>
-                      <p className="text-center">
-                        Already have an account?{" "}
-                        <Link
-                          className="link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
-                          to="/login"
-                        >
-                          Login
-                        </Link>
-                      </p>
-                    </div>
-                    <div className="msg mt-3" />
-                  </form>
-                </div>
+                <button
+                  className="carousel-control-prev"
+                  type="button"
+                  data-bs-target="#registerCarousel"
+                  data-bs-slide="prev"
+                >
+                  <span className="carousel-control-prev-icon" aria-hidden="true" />
+                  <span className="visually-hidden">Previous</span>
+                </button>
+                <button
+                  className="carousel-control-next"
+                  type="button"
+                  data-bs-target="#registerCarousel"
+                  data-bs-slide="next"
+                >
+                  <span className="carousel-control-next-icon" aria-hidden="true" />
+                  <span className="visually-hidden">Next</span>
+                </button>
               </div>
             </div>
           </div>
+          
+          <div className="col-lg-6 bg-white p-5">
+            <div className="register-form-wrapper">
+              <div className="text-center mb-4">
+                <img src={logo} alt="Logo" className="register-logo mb-3" />
+                <h2 className="fw-bold mb-3">Create Account</h2>
+                {error && (
+                  <Alert variant="danger" className="mt-2">
+                    {error}
+                  </Alert>
+                )}
+              </div>
+
+              <Form ref={registerRef} onSubmit={handleSubmit} className="register-form">
+                <InputGroup className="mb-3">
+                  <InputGroup.Text>
+                    <FaUser />
+                  </InputGroup.Text>
+                  <Form.Control
+                    name="name"
+                    placeholder="Full Name"
+                    required
+                  />
+                </InputGroup>
+
+                <InputGroup className="mb-3">
+                  <InputGroup.Text>
+                    <FaEnvelope />
+                  </InputGroup.Text>
+                  <Form.Control
+                    type="email"
+                    name="email"
+                    placeholder="Email Address"
+                    isInvalid={!validEmail}
+                    value={email.email}
+                    onChange={(e) => {
+                      setValidEmail(true);
+                      setEmail(prev => ({ ...prev, email: e.target.value }));
+                    }}
+                    onBlur={(e) => {
+                      setValidEmail(
+                        new RegExp(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/).test(e.target.value)
+                      );
+                    }}
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a valid email address
+                  </Form.Control.Feedback>
+                </InputGroup>
+
+                <InputGroup className="mb-3">
+                  <InputGroup.Text>
+                    <FaLock />
+                  </InputGroup.Text>
+                  <Form.Control
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Password"
+                    isInvalid={!validPw}
+                    onChange={() => setValidPw(true)}
+                    required
+                  />
+                  <Button
+                    variant="outline-secondary"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </Button>
+                  <Form.Control.Feedback type="invalid">
+                    Password must contain at least one uppercase letter, one number, and one special character
+                  </Form.Control.Feedback>
+                </InputGroup>
+
+                <InputGroup className="mb-4">
+                  <InputGroup.Text>
+                    <FaLock />
+                  </InputGroup.Text>
+                  <Form.Control
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    placeholder="Confirm Password"
+                    required
+                  />
+                  <Button
+                    variant="outline-secondary"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                  </Button>
+                </InputGroup>
+
+                <Form.Group className="mb-3">
+                  <Form.Check
+                    required
+                    label="I agree to the Terms & Conditions"
+                    feedback="You must agree before submitting."
+                    feedbackType="invalid"
+                  />
+                </Form.Group>
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="w-100 py-2 mb-3"
+                  disabled={submitDisabled}
+                >
+                  {submitDisabled ? (
+                    <>
+                      <Spinner animation="border" size="sm" className="me-2" />
+                      Creating Account...
+                    </>
+                  ) : (
+                    'Create Account'
+                  )}
+                </Button>
+
+                <p className="text-center mb-0">
+                  Already have an account?{' '}
+                  <Link to="/login" className="text-primary text-decoration-none">
+                    Sign In
+                  </Link>
+                </p>
+              </Form>
+            </div>
+          </div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 };
 

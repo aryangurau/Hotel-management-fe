@@ -15,14 +15,14 @@ const AddButton = ({ text = "Add new", variant = "primary", url = "/" }) => {
   );
 };
 
-export const ShoppingButton = ({ size = 0 }) => {
+export const ShoppingButton = ({ size }) => {
   return (
-    <>
-      <TbShoppingBag size="1.5rem" />
-      <Badge pill bg="dark">
-        {size}
-      </Badge>
-    </>
+    <div className="shopping-button">
+      <i className="bi bi-cart3 fs-5"></i>
+      <span className="quantity-badge">
+        {size || 0}
+      </span>
+    </div>
   );
 };
 

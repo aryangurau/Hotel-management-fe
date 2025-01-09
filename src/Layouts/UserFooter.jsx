@@ -3,17 +3,21 @@ import {
   FaTwitter,
   FaGooglePlusG,
   FaInstagram,
+  FaHome,
+  FaEnvelope,
+  FaPhone,
+  FaPrint
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import Image from 'react-bootstrap/Image';
 import logo from "../assets/img/logo3.jpg"
+
 const UserFooter = () => {
   return (
     <div>
       {/* Remove the container if you want to extend the Footer to full width. */}
-
       <footer
-        className="text-white text-center text-lg-start "
+        className="text-white text-center text-lg-start"
         style={{ backgroundColor: "#003B95" }}
       >
         {/* Grid container */}
@@ -21,50 +25,44 @@ const UserFooter = () => {
           {/*Grid row*/}
           <div className="row mt-4">
             {/*Grid column*/}
-            
-        
-        
-            <div className="col-lg-4 col-md-12 mb-4 mb-md-0 ">
-            <Image src={logo}  width={60} height={60}roundedCircle />
+            <div className="col-lg-4 col-md-12 mb-4 mb-md-0">
+              <Image src={logo} width={60} height={60} roundedCircle />
               <h5 className="text-uppercase mb-4">About Us</h5>
               <p>
-                At vero eos et accusamus et iusto odio dignissimos ducimus qui
-                blanditiis praesentium voluptatum deleniti atque corrupti.
+                Welcome to XYZ Hotel, where luxury meets comfort. We are dedicated to providing exceptional hospitality services with a commitment to excellence in every stay.
               </p>
               <p>
-                Blanditiis praesentium voluptatum deleniti atque corrupti quos
-                dolores et quas molestias.
+                Our mission is to create memorable experiences for our guests through personalized service, elegant accommodations, and world-class amenities.
               </p>
-              <div className="mt-4">
+              <div className="mt-4 social-icons">
                 {/* Facebook */}
-                <Link to="/"target="_blank"
+                <Link to="/" target="_blank"
                   type="button"
-                  className="btn btn-floating btn-warning btn-lg mx-1"
+                  className="btn btn-floating btn-warning btn-lg mx-2"
                 >
-                  <FaFacebookF />
-                </Link>
-                {/* Dribbble */}
-                <Link to="/"target="_blank"
-                  type="button"
-                  className="btn btn-floating btn-warning btn-lg mx-1"
-                >
-                  <FaTwitter />
+                  <FaFacebookF size={20} />
                 </Link>
                 {/* Twitter */}
-                <Link to="/"target="_blank"
+                <Link to="/" target="_blank"
                   type="button"
-                  className="btn btn-floating btn-warning btn-lg mx-1"
+                  className="btn btn-floating btn-warning btn-lg mx-2"
                 >
-                  <FaGooglePlusG />
+                  <FaTwitter size={20} />
                 </Link>
-                {/* Google + */}
-                <Link to="/"target="_blank"
+                {/* Google Plus */}
+                <Link to="/" target="_blank"
                   type="button"
-                  className="btn btn-floating btn-warning btn-lg mx-1"
+                  className="btn btn-floating btn-warning btn-lg mx-2"
                 >
-                  <FaInstagram />
+                  <FaGooglePlusG size={22} />
                 </Link>
-                {/* Linkedin */}
+                {/* Instagram */}
+                <Link to="/" target="_blank"
+                  type="button"
+                  className="btn btn-floating btn-warning btn-lg mx-2"
+                >
+                  <FaInstagram size={20} />
+                </Link>
               </div>
             </div>
             {/*Grid column*/}
@@ -86,10 +84,7 @@ const UserFooter = () => {
                 </label>
                 <div className="form-notch">
                   <div className="form-notch-leading" style={{ width: 9 }} />
-                  <div
-                    className="form-notch-middle"
-                    style={{ width: "48.8px" }}
-                  />
+                  <div className="form-notch-middle" style={{ width: "48.8px" }} />
                   <div className="form-notch-trailing" />
                 </div>
               </div>
@@ -151,14 +146,13 @@ const UserFooter = () => {
           className="text-center p-3"
           style={{ backgroundColor: "rgba(0, 0, 0, 0.2)" }}
         >
-          © 2024 Copyright:
+          2024 Copyright:
           <Link className="text-white" to="https://github.com/aryangurau/Hotel-management-fe" target="_blank">
-           XYZ hotel
+            XYZ hotel
           </Link>
         </div>
         {/* Copyright */}
       </footer>
-
       {/* End of .container */}
     </div>
   );

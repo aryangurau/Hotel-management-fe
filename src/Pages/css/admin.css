@@ -1,0 +1,141 @@
+/* Admin Layout Styles */
+.admin-layout {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.admin-layout main {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Admin Footer Styles */
+.admin-footer {
+  background-color: #ffffff;
+  border-top: 1px solid #e9ecef;
+  padding: 1rem 0;
+}
+
+.admin-footer .hover-primary {
+  transition: color 0.2s ease;
+}
+
+.admin-footer .hover-primary:hover {
+  color: #003B95 !important;
+}
+
+/* Admin Profile Styles */
+.admin-profile .card {
+  border: none;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  transition: box-shadow 0.3s ease;
+}
+
+.admin-profile .card:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
+
+.admin-profile .form-control:disabled {
+  background-color: #f8f9fa;
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.admin-profile .form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.admin-profile .form-control {
+  border-radius: 0.375rem;
+  border-color: #dee2e6;
+  padding: 0.5rem 0.75rem;
+}
+
+.admin-profile .form-control:focus {
+  border-color: #003B95;
+  box-shadow: 0 0 0 0.2rem rgba(0, 59, 149, 0.25);
+}
+
+.admin-profile .btn-outline-primary {
+  border-color: #003B95;
+  color: #003B95;
+}
+
+.admin-profile .btn-outline-primary:hover {
+  background-color: #003B95;
+  color: white;
+}
+
+.admin-profile .btn-primary {
+  background-color: #003B95;
+  border-color: #003B95;
+}
+
+.admin-profile .btn-primary:hover {
+  background-color: #002d74;
+  border-color: #002d74;
+}
+
+.admin-profile h2 {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.admin-profile h5 {
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.admin-profile .text-muted {
+  color: #6c757d !important;
+}
+
+/* Responsive Styles */
+@media (max-width: 991.98px) {
+  .admin-profile .card {
+    margin-bottom: 1rem;
+  }
+
+  .admin-footer {
+    text-align: center;
+  }
+
+  .admin-footer .text-end {
+    text-align: center !important;
+    margin-top: 1rem;
+  }
+
+  .admin-footer .list-inline {
+    justify-content: center;
+    display: flex;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+
+  .admin-profile .col-md-6 {
+    margin-bottom: 1rem;
+  }
+
+  .admin-footer .col-md-4:not(:last-child) {
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .admin-profile h2 {
+    font-size: 1.5rem;
+  }
+
+  .admin-profile h5 {
+    font-size: 1.1rem;
+  }
+
+  .admin-footer {
+    padding: 1rem;
+  }
+}

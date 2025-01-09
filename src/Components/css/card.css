@@ -1,0 +1,276 @@
+/* Hotel Card Styles */
+.hotel-card {
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.hotel-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.hotel-card .row {
+  margin: 0;
+  min-height: 300px;
+}
+
+.hotel-card .col-md-5,
+.hotel-card .col-md-7 {
+  padding: 0;
+}
+
+.image-wrapper {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.hotel-image {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.image-wrapper:hover .hotel-image {
+  transform: scale(1.1);
+}
+
+.image-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-wrapper:hover .image-overlay {
+  opacity: 1;
+}
+
+.image-caption {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.carousel,
+.carousel-inner,
+.carousel-item {
+  height: 100%;
+}
+
+.hotel-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+.location {
+  color: #7f8c8d;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.location svg {
+  color: #e74c3c;
+}
+
+.description {
+  color: #34495e;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.amenity-badge {
+  background: #f8f9fa;
+  color: #2c3e50;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.amenity-badge svg {
+  color: #3498db;
+}
+
+.rating-box {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.rating-score {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.rating-text {
+  color: #27ae60;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.price-box {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.2;
+}
+
+.price-text {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.book-now-btn {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border-radius: 25px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: linear-gradient(45deg, #3498db, #2980b9);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.book-now-btn:hover {
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+  background: linear-gradient(45deg, #2980b9, #3498db);
+}
+
+/* Carousel Controls */
+.carousel-control-prev,
+.carousel-control-next {
+  width: 15%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.carousel:hover .carousel-control-prev,
+.carousel:hover .carousel-control-next {
+  opacity: 0.8;
+}
+
+.carousel-indicators {
+  margin-bottom: 0.5rem;
+}
+
+.carousel-indicators button {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin: 0 4px;
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+.carousel-indicators .active {
+  background-color: #fff;
+}
+
+/* Modal Styles */
+.booking-modal .modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.booking-modal .modal-body {
+  padding: 0;
+}
+
+.booking-modal img {
+  width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+  .hotel-card .row {
+    min-height: auto;
+  }
+
+  .hotel-image {
+    height: 250px;
+  }
+
+  .hotel-name {
+    font-size: 1.3rem;
+  }
+
+  .description {
+    font-size: 0.9rem;
+  }
+
+  .price {
+    font-size: 1.3rem;
+  }
+
+  .rating-box,
+  .price-box {
+    margin-top: 1rem;
+    padding: 0.6rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hotel-image {
+    height: 200px;
+  }
+
+  .hotel-name {
+    font-size: 1.2rem;
+    margin-top: 0.5rem;
+  }
+
+  .description {
+    font-size: 0.85rem;
+  }
+
+  .amenity-badge {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .price {
+    font-size: 1.2rem;
+  }
+
+  .rating-score {
+    font-size: 1.3rem;
+  }
+}

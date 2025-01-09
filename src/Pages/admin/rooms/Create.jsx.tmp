@@ -1,0 +1,211 @@
+import { useState } from "react";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { Card, Form, Button, Row, Col } from "react-bootstrap";
+import { createRoom } from "../../../slices/roomSlice";
+import { toast } from "react-toastify";
+
+const AdminRoomCreate = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    name: "",
+    type: "",
+    price: "",
+    description: "",
+    totalGuests: "",
+    amenities: "",
+    images: [],
+    status: "empty"
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    setFormData(prev => ({
+      ...prev,
+      images: files
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const formDataToSend = new FormData();
+      
+      // Handle text fields
+      Object.keys(formData).forEach(key => {
+        if (key !== 'images') {
+          if (key === 'amenities') {
+            const amenitiesArray = formData[key]
+              .split(',')
+              .map(item => item.trim())
+              .filter(item => item);
+            formDataToSend.append(key, JSON.stringify(amenitiesArray));
+          } else if (key === 'price' || key === 'totalGuests') {
+            formDataToSend.append(key, Number(formData[key]));
+          } else {
+            formDataToSend.append(key, formData[key]);
+          }
+        }
+      });
+
+      // Handle images
+      formData.images.forEach(image => {
+        formDataToSend.append('images', image);
+      });
+
+      await dispatch(createRoom(formDataToSend)).unwrap();
+      toast.success("Room created successfully!");
+      navigate("/admin/rooms");
+    } catch (error) {
+      toast.error(error.message || "Failed to create room");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="p-4">
+      <Card>
+        <Card.Header>
+          <div className="d-flex justify-content-between align-items-center">
+            <h4 className="mb-0">Create New Room</h4>
+            <Button variant="secondary" onClick={() => navigate("/admin/rooms")} size="sm">
+              Back to Rooms
+            </Button>
+          </div>
+        </Card.Header>
+        <Card.Body>
+          <Form onSubmit={handleSubmit}>
+            <Row className="g-3">
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Room Name*</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Enter room name"
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Room Type*</Form.Label>
+                  <Form.Select
+                    name="type"
+                    value={formData.type}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select room type</option>
+                    <option value="single">Single</option>
+                    <option value="double">Double</option>
+                    <option value="suite">Suite</option>
+                    <option value="deluxe">Deluxe</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Price (per night)*</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleChange}
+                    placeholder="Enter price"
+                    min="0"
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Maximum Guests*</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="totalGuests"
+                    value={formData.totalGuests}
+                    onChange={handleChange}
+                    placeholder="Enter max guests"
+                    min="1"
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={12}>
+                <Form.Group>
+                  <Form.Label>Description*</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Enter room description"
+                    rows={3}
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={12}>
+                <Form.Group>
+                  <Form.Label>Amenities*</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="amenities"
+                    value={formData.amenities}
+                    onChange={handleChange}
+                    placeholder="e.g., WiFi, TV, Air Conditioning"
+                    required
+                  />
+                  <Form.Text className="text-muted">
+                    Separate amenities with commas
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={12}>
+                <Form.Group>
+                  <Form.Label>Images*</Form.Label>
+                  <Form.Control
+                    type="file"
+                    name="images"
+                    onChange={handleImageChange}
+                    multiple
+                    accept="image/*"
+                    required
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            <div className="mt-4">
+              <Button type="submit" variant="primary" disabled={loading} className="me-2">
+                {loading ? "Creating..." : "Create Room"}
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => navigate("/admin/rooms")} disabled={loading}>
+                Cancel
+              </Button>
+            </div>
+          </Form>
+        </Card.Body>
+      </Card>
+    </div>
+  );
+};
+
+export default AdminRoomCreate;

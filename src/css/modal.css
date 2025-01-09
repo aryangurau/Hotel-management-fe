@@ -1,0 +1,89 @@
+/* Hotel Card Styles */
+.hotel-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  background: #fff;
+  transition: transform 0.3s ease;
+}
+
+.hotel-card:hover {
+  transform: translateY(-5px);
+}
+
+.hotel-carousel {
+  height: 250px;
+  overflow: hidden;
+}
+
+.hotel-carousel img {
+  height: 250px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.carousel-caption {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  border-radius: 8px;
+  bottom: 20px;
+}
+
+.carousel-caption h5 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.hotel-info {
+  padding: 1rem;
+}
+
+.hotel-info h4 {
+  margin-bottom: 0.5rem;
+  color: #1a237e;
+  font-weight: 600;
+}
+
+.hotel-info .location {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.hotel-info .price {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1a237e;
+  margin-bottom: 0.5rem;
+}
+
+.amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.amenities .badge {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.8rem;
+  background-color: #1a237e;
+}
+
+/* Carousel Fade Animation */
+.carousel-fade .carousel-item {
+  opacity: 0;
+  transition-duration: .6s;
+  transition-property: opacity;
+}
+
+.carousel-fade .carousel-item.active,
+.carousel-fade .carousel-item-next.carousel-item-start,
+.carousel-fade .carousel-item-prev.carousel-item-end {
+  opacity: 1;
+}
+
+.carousel-fade .active.carousel-item-start,
+.carousel-fade .active.carousel-item-end {
+  opacity: 0;
+}

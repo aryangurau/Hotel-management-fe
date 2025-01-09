@@ -8,35 +8,64 @@ export const isLoggedIn = () => {
     // Check if token exists or not
     const token = getToken();
     if (!token) return false;
-    const { exp } = jwtDecode(token);
-    if (!exp) return false;
+    
+    const decoded = jwtDecode(token);
+    if (!decoded || !decoded.exp) return false;
+    
     const now = moment().unix();
     // Check if token has expired or not
-    const timeDiff = moment(exp).diff(moment(now));
-    if (timeDiff <= 0) return false;
-    return true;
-  } catch (e) {
-    console.log(e);
+    return decoded.exp > now;
+  } catch (error) {
+    console.error('Error checking login status:', error);
     removeAll();
+    return false;
   }
 };
 
 export const setLoggedInUser = () => {
-  const token = getToken();
-  const { name, email, roles } = jwtDecode(token);
-  setCurrentUser({ name, email, roles });
+  try {
+    const token = getToken();
+    if (!token) {
+      throw new Error('No token found');
+    }
+    const decoded = jwtDecode(token);
+    if (!decoded) {
+      throw new Error('Invalid token');
+    }
+    const { name, email, roles, _id } = decoded;
+    if (!name || !email || !_id) {
+      throw new Error('Invalid user data in token');
+    }
+    const userData = { name, email, roles, _id };
+    setCurrentUser(userData);
+    return userData;
+  } catch (error) {
+    console.error('Error setting logged in user:', error);
+    removeAll();
+    throw error;
+  }
 };
+
 export const isValidRole = (role = []) => {
-  // Check the token validity
-  const isValidLogin = isLoggedIn();
-  if (!isValidLogin) return false;
-  // check if there is no roles to check
-  if (role === "") return true;
-  // check user detail from token
-  const token = getToken();
-  const user = jwtDecode(token);
-  // compare the role from the token to that of the user sent
-  const isValidRole = role.some((r) => user.roles.includes(r));
-  if (!isValidRole) return false;
-  return true;
+  try {
+    // Check the token validity
+    const isValidLogin = isLoggedIn();
+    if (!isValidLogin) return false;
+
+    // If no roles to check, return true
+    if (!role || role.length === 0) return true;
+
+    // Get user data from token
+    const token = getToken();
+    if (!token) return false;
+
+    const decoded = jwtDecode(token);
+    if (!decoded || !decoded.roles) return false;
+
+    // Compare the roles
+    return role.some((r) => decoded.roles.includes(r));
+  } catch (error) {
+    console.error('Error checking role validity:', error);
+    return false;
+  }
 };

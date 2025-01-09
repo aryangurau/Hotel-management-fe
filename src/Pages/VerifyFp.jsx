@@ -295,7 +295,6 @@ const VerifyFp = () => {
                         id="pass"
                         value={verificationData?.newPassword}
                         onInput={passwordValidation}
-                        
                         required
                       />
                     </div>

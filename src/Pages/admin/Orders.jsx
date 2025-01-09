@@ -1,92 +1,145 @@
-
-import { Dropdown } from "react-bootstrap";
-
-import Paginate from "../../Components/Paginate";
-import AddButton from "../../Components/AddButton";
+import React, { useEffect, useState } from 'react';
+import { Table, Badge, Container, Pagination, Form, Row, Col } from 'react-bootstrap';
+import { useDispatch, useSelector } from 'react-redux';
+import { listOrders } from '../../slices/orderSlice';
+import { Notify } from '../../components/Notify';
+import { getCurrentUser } from '../../Utils/session';
 
 const AdminOrders = () => {
-  return (
-    <>
-      <div className="col-md-9 m-5">
-        <h1>List</h1>
-        <AddButton text="Add new Order" variant="danger" />
-        <div className="d-flex">
-          <div className="input-group mt-3 mb-3">
-            <Dropdown>
-              <Dropdown.Toggle variant="danger">Status</Dropdown.Toggle>
+  const dispatch = useDispatch();
+  const { orders = [], loading, error, currentPage, totalPages } = useSelector((state) => state.orders);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [statusFilter, setStatusFilter] = useState('');
+  
+  // Get user data safely
+  const userData = (() => {
+    const user = getCurrentUser();
+    if (!user) return {};
+    return typeof user === 'string' ? JSON.parse(user) : user;
+  })();
+  
+  const isAdmin = userData?.roles?.includes('admin');
 
-              <Dropdown.Menu>
-                <Dropdown.Item href="#/action-1">Booked</Dropdown.Item>
-                <Dropdown.Item href="#/action-2">Empty</Dropdown.Item>
-                <Dropdown.Item href="#/action-3">Occupied</Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search by name..."
-            />
+  useEffect(() => {
+    const filter = {
+      ...(statusFilter && { status: statusFilter }),
+      ...((!isAdmin && userData.email) && { updated_by: userData.email })
+    };
+
+    dispatch(listOrders({ page, limit, filter }));
+  }, [dispatch, page, limit, statusFilter, isAdmin, userData.email]);
+
+  if (error) {
+    return <Notify msg={error.message || error} variant="danger" />;
+  }
+
+  const getStatusBadge = (status) => {
+    const variants = {
+      confirmed: 'success',
+      pending: 'warning',
+      cancelled: 'danger',
+      unpaid: 'secondary'
+    };
+    return <Badge bg={variants[status] || 'secondary'}>{status}</Badge>;
+  };
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  return (
+    <Container fluid className="mt-4">
+      <Row className="mb-4 align-items-center">
+        <Col>
+          <h2>{isAdmin ? 'All Orders' : 'My Orders'}</h2>
+        </Col>
+        <Col xs="auto">
+          <Form.Select 
+            value={statusFilter} 
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ width: '200px' }}
+          >
+            <option value="">All Status</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="pending">Pending</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="unpaid">Unpaid</option>
+          </Form.Select>
+        </Col>
+      </Row>
+
+      {loading ? (
+        <div className="text-center py-4">Loading...</div>
+      ) : orders && orders.length > 0 ? (
+        <>
+          <Table responsive striped bordered hover>
+            <thead>
+              <tr>
+                <th>Order Number</th>
+                <th>Hotel</th>
+                <th>Room</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Total Price</th>
+                <th>Status</th>
+                <th>Created By</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order._id}>
+                  <td>{order.orderNumber}</td>
+                  <td>{order.hotel}</td>
+                  <td>{order.room}</td>
+                  <td>{new Date(order.checkIn).toLocaleDateString()}</td>
+                  <td>{new Date(order.checkOut).toLocaleDateString()}</td>
+                  <td>Rs. {order.totalPrice.toLocaleString()}</td>
+                  <td>{getStatusBadge(order.status)}</td>
+                  <td>{order.created_by}</td>
+                  <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+
+          <div className="d-flex justify-content-center mt-4">
+            <Pagination>
+              <Pagination.First 
+                disabled={page === 1} 
+                onClick={() => handlePageChange(1)}
+              />
+              <Pagination.Prev 
+                disabled={page === 1} 
+                onClick={() => handlePageChange(page - 1)}
+              />
+              
+              {[...Array(totalPages)].map((_, idx) => (
+                <Pagination.Item
+                  key={idx + 1}
+                  active={idx + 1 === page}
+                  onClick={() => handlePageChange(idx + 1)}
+                >
+                  {idx + 1}
+                </Pagination.Item>
+              ))}
+              
+              <Pagination.Next 
+                disabled={page === totalPages} 
+                onClick={() => handlePageChange(page + 1)}
+              />
+              <Pagination.Last 
+                disabled={page === totalPages} 
+                onClick={() => handlePageChange(totalPages)}
+              />
+            </Pagination>
           </div>
-        </div>
-        <table className="table table-striped">
-          <thead>
-            <tr>
-              <th scope="col">#</th>
-              <th scope="col">Number</th>
-              <th scope="col">Type</th>
-              <th scope="col">Price (NPR)</th>
-              <th scope="col">Status</th>
-              <th scope="col">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="row">1</th>
-              <td>101</td>
-              <td>Single</td>
-              <td>2000</td>
-              <td>
-                <span className="badge text-bg-success">Occupied</span>
-              </td>
-              <td>
-                <div className="btn-group me-2" role="button">
-                  <i className="bi bi-pencil-square text-success"></i>
-                </div>
-                <div className="btn-group" role="button">
-                  <i className="bi bi-trash text-danger"></i>
-                </div>
-              </td>
-            </tr>
-            <tr className="placeholder-glow">
-              <th scope="row">
-                <span className="placeholder col-6"></span>
-              </th>
-              <td>
-                <span className="placeholder col-6"></span>
-              </td>
-              <td>
-                <span className="placeholder col-6"></span>
-              </td>
-              <td>
-                <span className="placeholder col-6"></span>
-              </td>
-              <td>
-                <span className="placeholder col-6"></span>
-              </td>
-              <td>
-                <div className="btn-group me-2" role="button">
-                  <i className="bi bi-pencil-square text-success"></i>
-                </div>
-                <div className="btn-group" role="button">
-                  <i className="bi bi-trash text-danger"></i>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <Paginate />
-      </div>
-    </>
+        </>
+      ) : (
+        <div className="text-center py-4">No orders found</div>
+      )}
+    </Container>
   );
 };
 
