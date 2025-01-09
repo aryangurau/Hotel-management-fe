@@ -28,6 +28,24 @@ export const getMyBookings = createAsyncThunk(
     }
 );
 
+// Async thunk for creating a booking
+export const createBooking = createAsyncThunk(
+    'booking/createBooking',
+    async (bookingData, { rejectWithValue }) => {
+        try {
+            const token = getToken();
+            const response = await axiosInstance.post('/bookings', bookingData, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to create booking');
+        }
+    }
+);
+
 const initialState = {
     bookings: [],
     loading: false,
@@ -58,6 +76,18 @@ const bookingSlice = createSlice({
                 state.error = null;
             })
             .addCase(getMyBookings.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+            .addCase(createBooking.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(createBooking.fulfilled, (state, action) => {
+                state.loading = false;
+                state.bookings.push(action.payload);
+            })
+            .addCase(createBooking.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             });
