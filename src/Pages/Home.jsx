@@ -13,6 +13,7 @@ import Banner from '../components/Banner';
 import Payment from '../Components/Payment';
 import './css/home.css';
 import './css/modal.css';
+import moment from 'moment';
 
 const ROOM_CATEGORIES = {
   SINGLE: "Single Rooms",
@@ -47,12 +48,31 @@ const Home = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   
-  const [bookingDetails, setBookingDetails] = useState({
+  const [bookingData, setBookingData] = useState({
     checkIn: '',
     checkOut: '',
     guests: 1,
-    rooms: 1
+    totalAmount: 0
   });
+
+  const resetBookingData = () => {
+    setBookingData({
+      checkIn: '',
+      checkOut: '',
+      guests: 1,
+      totalAmount: 0
+    });
+  };
+
+  const handleShowBooking = (room) => {
+    setSelectedRoom(room);
+    setBookingData(prev => ({
+      ...prev,
+      guests: 1,
+      totalAmount: 0
+    }));
+    setShowBookingModal(true);
+  };
 
   const { data: rooms, loading, error } = useFetch({ url: "/rooms/public" });
 
@@ -74,8 +94,7 @@ const Home = () => {
       navigate('/login');
       return;
     }
-    setSelectedRoom(room);
-    setShowBookingModal(true);
+    handleShowBooking(room);
   };
 
   const handleAddToCart = (room) => {
@@ -87,39 +106,49 @@ const Home = () => {
     setCurrentPage(pageNumber);
   };
 
-  const handleBookingSubmit = () => {
-    if (!bookingDetails.checkIn || !bookingDetails.checkOut) {
-      toast.error('Please select check-in and check-out dates');
+  const handleProceedToPayment = () => {
+    // Validate form data
+    if (!bookingData.checkIn || !bookingData.checkOut || !bookingData.guests) {
+      toast.error('Please fill in all required fields');
       return;
     }
 
-    const checkIn = new Date(bookingDetails.checkIn);
-    const checkOut = new Date(bookingDetails.checkOut);
+    // Validate dates
+    const checkIn = moment(bookingData.checkIn);
+    const checkOut = moment(bookingData.checkOut);
+    
+    if (!checkIn.isValid() || !checkOut.isValid()) {
+      toast.error('Please enter valid dates');
+      return;
+    }
 
-    if (checkIn >= checkOut) {
+    if (checkIn.isBefore(moment(), 'day')) {
+      toast.error('Check-in date cannot be in the past');
+      return;
+    }
+
+    if (checkOut.isSameOrBefore(checkIn)) {
       toast.error('Check-out date must be after check-in date');
       return;
     }
 
-    // Calculate number of nights
-    const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-    
-    if (nights <= 0) {
-      toast.error('Invalid date range');
+    // Validate guest count
+    if (!bookingData.guests || bookingData.guests < 1 || bookingData.guests > (selectedRoom?.maxGuests || 1)) {
+      toast.error(`Please select between 1 and ${selectedRoom?.maxGuests || 1} guests`);
       return;
     }
 
-    // Calculate total amount
-    const totalAmount = selectedRoom.price * nights;
-
-    // Update booking details with calculated amount
-    setBookingDetails(prev => ({
+    // Calculate number of days and total amount
+    const numberOfDays = checkOut.diff(checkIn, 'days');
+    const totalAmount = numberOfDays * (selectedRoom?.price || 0);
+    
+    // Update booking data
+    setBookingData(prev => ({
       ...prev,
-      nights,
-      totalAmount
+      totalAmount,
+      numberOfDays
     }));
 
-    // Close booking modal and show payment modal
     setShowBookingModal(false);
     setShowPaymentModal(true);
   };
@@ -128,12 +157,7 @@ const Home = () => {
     // Reset all modals and show success message
     setShowPaymentModal(false);
     setSelectedRoom(null);
-    setBookingDetails({
-      checkIn: '',
-      checkOut: '',
-      guests: 1,
-      rooms: 1
-    });
+    resetBookingData();
     toast.success('Booking confirmed successfully!');
   };
 
@@ -378,96 +402,119 @@ const Home = () => {
       <Payment 
         show={showPaymentModal}
         handleClose={() => setShowPaymentModal(false)}
-        amount={bookingDetails.totalAmount || (selectedRoom?.price || 0)}
+        amount={bookingData.totalAmount}
+        selectedRoom={selectedRoom}
+        bookingDetails={bookingData}
         onPaymentSuccess={() => {
           toast.success('Booking confirmed successfully!');
-          setBookingDetails({
-            checkIn: '',
-            checkOut: '',
-            guests: 1,
-            rooms: 1
-          });
+          resetBookingData();
+          setShowPaymentModal(false);
+          setSelectedRoom(null);
           navigate('/booking-history');
         }}
-        selectedRoom={selectedRoom}
-        bookingDetails={bookingDetails}
       />
 
       {/* Booking Modal */}
-      <Modal show={showBookingModal} onHide={() => setShowBookingModal(false)}>
+      <Modal show={showBookingModal} onHide={() => {
+        setShowBookingModal(false);
+        resetBookingData();
+      }}>
         <Modal.Header closeButton>
-          <Modal.Title>Book Room - {selectedRoom?.name}</Modal.Title>
+          <Modal.Title>Book Room</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Form>
+          <Form onSubmit={(e) => {
+            e.preventDefault();
+            handleProceedToPayment();
+          }}>
             <Form.Group className="mb-3">
-              <Form.Label>Check-in Date</Form.Label>
+              <Form.Label>Check-in Date <span className="text-danger">*</span></Form.Label>
               <Form.Control
                 type="date"
-                value={bookingDetails.checkIn}
-                onChange={(e) =>
-                  setBookingDetails({ ...bookingDetails, checkIn: e.target.value })
-                }
-                min={new Date().toISOString().split('T')[0]}
+                value={bookingData.checkIn}
+                min={moment().format('YYYY-MM-DD')}
+                onChange={(e) => setBookingData(prev => ({ ...prev, checkIn: e.target.value }))}
+                required
               />
             </Form.Group>
+
             <Form.Group className="mb-3">
-              <Form.Label>Check-out Date</Form.Label>
+              <Form.Label>Check-out Date <span className="text-danger">*</span></Form.Label>
               <Form.Control
                 type="date"
-                value={bookingDetails.checkOut}
-                onChange={(e) =>
-                  setBookingDetails({ ...bookingDetails, checkOut: e.target.value })
-                }
-                min={bookingDetails.checkIn || new Date().toISOString().split('T')[0]}
+                value={bookingData.checkOut}
+                min={bookingData.checkIn ? moment(bookingData.checkIn).add(1, 'days').format('YYYY-MM-DD') : moment().add(1, 'days').format('YYYY-MM-DD')}
+                onChange={(e) => setBookingData(prev => ({ ...prev, checkOut: e.target.value }))}
+                required
+                disabled={!bookingData.checkIn}
               />
             </Form.Group>
+
             <Form.Group className="mb-3">
-              <Form.Label>Number of Guests</Form.Label>
-              <Form.Control
-                type="number"
-                min="1"
-                max={selectedRoom?.totalGuests || 1}
-                value={bookingDetails.guests}
-                onChange={(e) =>
-                  setBookingDetails({ ...bookingDetails, guests: parseInt(e.target.value) })
-                }
-              />
+              <Form.Label>Number of Guests <span className="text-danger">*</span></Form.Label>
+              <div className="d-flex align-items-center">
+                <Button 
+                  variant="outline-secondary" 
+                  type="button"
+                  onClick={() => {
+                    if (bookingData.guests > 1) {
+                      setBookingData(prev => ({ ...prev, guests: prev.guests - 1 }));
+                    }
+                  }}
+                  disabled={bookingData.guests <= 1}
+                >
+                  -
+                </Button>
+                <Form.Control
+                  type="number"
+                  min={1}
+                  max={selectedRoom?.maxGuests || 1}
+                  value={bookingData.guests}
+                  style={{ width: '60px', textAlign: 'center', margin: '0 10px' }}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (!isNaN(value) && value >= 1 && value <= (selectedRoom?.maxGuests || 1)) {
+                      setBookingData(prev => ({ ...prev, guests: value }));
+                    }
+                  }}
+                  required
+                />
+                <Button 
+                  variant="outline-secondary"
+                  type="button"
+                  onClick={() => {
+                    if (bookingData.guests < (selectedRoom?.maxGuests || 1)) {
+                      setBookingData(prev => ({ ...prev, guests: prev.guests + 1 }));
+                    }
+                  }}
+                  disabled={bookingData.guests >= (selectedRoom?.maxGuests || 1)}
+                >
+                  +
+                </Button>
+              </div>
               <Form.Text className="text-muted">
-                Maximum {selectedRoom?.totalGuests} guests allowed
+                Maximum {selectedRoom?.maxGuests || 1} guests allowed
               </Form.Text>
             </Form.Group>
-          </Form>
-          {selectedRoom && (
-            <div className="mt-4 p-3 bg-light rounded">
-              <h6>Booking Summary</h6>
-              <div className="d-flex justify-content-between mb-2">
-                <span>Room Rate:</span>
-                <span>Rs. {selectedRoom.price}/night</span>
-              </div>
-              <div className="d-flex justify-content-between mb-2">
-                <span>Room Type:</span>
-                <span>{selectedRoom.type.charAt(0).toUpperCase() + selectedRoom.type.slice(1)}</span>
-              </div>
-              <div className="d-flex justify-content-between">
-                <span>Max Guests:</span>
-                <span>{selectedRoom.totalGuests}</span>
-              </div>
+
+            <div className="booking-summary mt-4">
+              <h5>Booking Summary</h5>
+              <p>Room Rate: Rs. {selectedRoom?.price}/night</p>
+              <p>Room Type: {selectedRoom?.type}</p>
+              <p>Max Guests: {selectedRoom?.maxGuests}</p>
             </div>
-          )}
+
+            <div className="d-grid gap-2">
+              <Button 
+                variant="primary" 
+                type="submit"
+                disabled={!bookingData.checkIn || !bookingData.checkOut || !bookingData.guests || bookingData.guests < 1 || bookingData.guests > (selectedRoom?.maxGuests || 1)}
+              >
+                Proceed to Payment
+              </Button>
+            </div>
+          </Form>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowBookingModal(false)}>
-            Close
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={handleBookingSubmit}
-            disabled={!bookingDetails.checkIn || !bookingDetails.checkOut || bookingDetails.guests < 1}
-          >
-            Proceed to Payment
-          </Button>
-        </Modal.Footer>
       </Modal>
     </div>
   );

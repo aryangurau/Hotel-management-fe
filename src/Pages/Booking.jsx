@@ -144,22 +144,22 @@ const Booking = () => {
   const handlePaymentSuccess = async (paymentDetails) => {
     try {
       const bookingData = {
-        roomId: paymentDetails.roomId,
-        amount: paymentDetails.amount,
-        paymentMethod: paymentDetails.paymentMethod,
+        roomId: selectedRoom._id,
         checkIn: paymentDetails.checkIn,
         checkOut: paymentDetails.checkOut,
-        roomType: paymentDetails.roomType,
-        guestCount: paymentDetails.guests,
-        user: paymentDetails.user
+        totalAmount: paymentDetails.amount,
+        guestName: paymentDetails.guestName,
+        phoneNumber: paymentDetails.phoneNumber,
+        numberOfDays: paymentDetails.numberOfDays,
+        paymentMethod: paymentDetails.paymentMethod
       };
 
       await dispatch(createBooking(bookingData)).unwrap();
       Notify.success("Room booked successfully!");
       setShowPayment(false);
-      navigate('/my-bookings');
+      navigate('/booking-history');
     } catch (error) {
-      Notify.error(error.message || "Failed to book room");
+      Notify.error(error.response?.data?.message || "Failed to book room");
     }
   };
 

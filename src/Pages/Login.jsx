@@ -32,19 +32,24 @@ const Login = () => {
 
       const response = await axiosInstance.post(URLS.LOGIN, login);
       
-      if (!response?.data?.data) {
+      if (!response?.data?.data?.token) {
         throw new Error('Invalid response from server');
       }
 
       try {
         // Store token
-        setToken(response.data.data);
+        setToken(response.data.data.token);
         // Set user data from token
-        setLoggedInUser();
+        const userData = setLoggedInUser();
         
-        // If there's a redirect path, go there
-        const from = location.state?.from?.pathname || "/";
-        navigate(from);
+        // Redirect based on role
+        if (userData.roles && userData.roles.includes('admin')) {
+          navigate('/admin/dashboard');
+        } else {
+          // If there's a redirect path, go there, otherwise go to home
+          const from = location.state?.from?.pathname || "/";
+          navigate(from);
+        }
       } catch (tokenError) {
         console.error('Error processing login response:', tokenError);
         setError('Error processing login. Please try again.');

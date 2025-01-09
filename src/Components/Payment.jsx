@@ -4,243 +4,177 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axiosInstance from '../Utils/axiosInstance';
 import { getToken, getCurrentUser } from '../Utils/session';
+import moment from 'moment';
+import './Payment.css';
 
-const PAYMENT_METHODS = {
-  ESEWA: {
-    id: 'ESEWA',
-    name: 'eSewa',
-    logo: 'https://esewa.com.np/common/images/esewa_logo.png'
+const paymentMethods = [
+  { 
+    id: 'ESEWA', 
+    name: 'eSewa', 
+    logo: 'https://play-lh.googleusercontent.com/vHB2FTOY2HnUAe_rtSh3QmB8OZI_t0VTDHZVxJl6Bv6HqaQJKzF1WZBFp1QtA3S6POg' 
   },
-  KHALTI: {
-    id: 'KHALTI',
-    name: 'Khalti',
-    logo: 'https://khalti.com/static/img/khalti-logo.png'
+  { 
+    id: 'KHALTI', 
+    name: 'Khalti', 
+    logo: 'https://play-lh.googleusercontent.com/fqYJHtyzZzA4vacRzeJoB93QC0W-cqI7hkKxBqRWlFRTJyKgLtLZPF_fPcFelAkFd6k' 
   },
-  BANK_TRANSFER: {
-    id: 'BANK_TRANSFER',
-    name: 'Bank Transfer',
-    logo: 'https://connectips.com/images/logo.png'
+  { 
+    id: 'BANK_TRANSFER', 
+    name: 'Bank Transfer', 
+    logo: 'https://cdn-icons-png.flaticon.com/512/2830/2830289.png' 
   },
-  CASH: {
-    id: 'CASH',
-    name: 'Cash',
-    logo: 'https://imepay.com.np/wp-content/uploads/2020/09/ime-pay.png'
+  { 
+    id: 'CASH', 
+    name: 'Cash', 
+    logo: 'https://cdn-icons-png.flaticon.com/512/2489/2489756.png' 
   }
-};
+];
 
-const Payment = ({ show, handleClose, amount, onPaymentSuccess, selectedRoom, bookingDetails = {} }) => {
+const Payment = ({ show, handleClose, selectedRoom, bookingDetails }) => {
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentData, setPaymentData] = useState({
+    guestName: '',
+    phoneNumber: '',
+    paymentMethod: ''
+  });
 
-  useEffect(() => {
-    if (!show) {
-      setPaymentMethod('');
-      setLoading(false);
-      setPaymentProcessing(false);
-    }
-  }, [show]);
+  const handlePaymentMethodChange = (method) => {
+    setPaymentData(prev => ({
+      ...prev,
+      paymentMethod: method
+    }));
+  };
 
-  const handlePayment = async (e) => {
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = moment(dateString);
+    return date.isValid() ? date.format('YYYY-MM-DD') : '';
+  };
+
+  const calculateNumberOfDays = () => {
+    if (!bookingDetails?.checkIn || !bookingDetails?.checkOut) return 0;
+    const checkIn = moment(bookingDetails.checkIn);
+    const checkOut = moment(bookingDetails.checkOut);
+    if (!checkIn.isValid() || !checkOut.isValid()) return 0;
+    return checkOut.diff(checkIn, 'days');
+  };
+
+  const calculateTotalAmount = () => {
+    const days = calculateNumberOfDays();
+    return days * (selectedRoom?.price || 0);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    if (!paymentData.guestName || !paymentData.phoneNumber || !paymentData.paymentMethod) {
+      toast.error('Please fill in all required fields and select a payment method');
+      return;
+    }
+
+    if (paymentData.phoneNumber.length < 6) {
+      toast.error('Please enter a valid phone number');
+      return;
+    }
+
+    setIsProcessing(true);
     try {
-      // Validate user session
-      const token = getToken();
-      const currentUser = getCurrentUser();
-      
-      if (!token || !currentUser) {
-        toast.error('Please login to continue');
-        handleClose();
-        navigate('/login');
-        return;
-      }
-
-      // Validate payment method
-      if (!paymentMethod) {
-        toast.error('Please select a payment method');
-        return;
-      }
-
-      // Validate room and booking details
-      if (!selectedRoom?._id) {
-        toast.error('Invalid room selection');
-        return;
-      }
-
-      if (!bookingDetails?.checkIn || !bookingDetails?.checkOut) {
-        toast.error('Please select check-in and check-out dates');
-        return;
-      }
-
-      if (!amount || amount <= 0) {
-        toast.error('Invalid amount');
-        return;
-      }
-
-      setLoading(true);
-      setPaymentProcessing(true);
-
-      // Step 1: Create the booking
       const bookingData = {
         roomId: selectedRoom._id,
-        checkIn: new Date(bookingDetails.checkIn).toISOString(),
-        checkOut: new Date(bookingDetails.checkOut).toISOString(),
-        guests: bookingDetails.guests || 1,
-        totalAmount: amount
+        checkIn: bookingDetails.checkIn,
+        checkOut: bookingDetails.checkOut,
+        numberOfDays: calculateNumberOfDays(),
+        totalAmount: calculateTotalAmount(),
+        guestName: paymentData.guestName,
+        phoneNumber: paymentData.phoneNumber,
+        paymentMethod: paymentData.paymentMethod,
+        guests: bookingDetails.guests
       };
 
-      console.log('Creating booking with data:', bookingData);
-      const bookingResponse = await axiosInstance.post('/bookings', bookingData);
+      console.log('Sending booking data:', bookingData);
 
-      if (!bookingResponse?.data?.data?._id) {
-        throw new Error('Failed to create booking');
+      const response = await axiosInstance.post('/bookings', bookingData);
+
+      if (response.data.success) {
+        toast.success(`Booking confirmed with ${paymentData.paymentMethod}!`);
+        handleClose();
+        navigate('/booking-history');
+      } else {
+        throw new Error(response.data?.message || 'Booking failed');
       }
-
-      const bookingId = bookingResponse.data.data._id;
-      console.log('Booking created with ID:', bookingId);
-
-      // Step 2: Initiate payment
-      const paymentData = {
-        bookingId,
-        paymentMethod,
-        amount
-      };
-
-      console.log('Initiating payment with data:', paymentData);
-      const paymentResponse = await axiosInstance.post('/payments/initiate', paymentData);
-
-      if (!paymentResponse?.data?.data?.payment) {
-        // Cancel the booking if payment initiation fails
-        await axiosInstance.post(`/bookings/${bookingId}/cancel`, {
-          reason: 'Payment initiation failed'
-        });
-        throw new Error('Failed to initiate payment');
-      }
-
-      const { payment } = paymentResponse.data.data;
-      console.log('Payment initiated:', payment);
-
-      // Step 3: Show processing message
-      toast.info('Processing payment...', {
-        autoClose: 2000
-      });
-
-      // Step 4: Simulate payment gateway delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Step 5: Simulate successful payment
-      const gatewayResponse = { status: 'success', token: 'mock_token' };
-      
-      // Step 6: Verify payment
-      const verifyData = {
-        transactionId: payment.transactionId,
-        gatewayResponse,
-        bookingId
-      };
-
-      console.log('Verifying payment with data:', verifyData);
-      const verifyResponse = await axiosInstance.post('/payments/verify', verifyData);
-
-      if (!verifyResponse?.data?.success) {
-        throw new Error('Payment verification failed');
-      }
-
-      // Success! Close modal and show success message
-      toast.success('Payment successful!');
-      
-      // Complete all state updates before navigation
-      await Promise.all([
-        onPaymentSuccess?.(),
-        new Promise(resolve => {
-          handleClose();
-          setTimeout(resolve, 100);
-        })
-      ]);
-
-      // Navigate to booking history
-      navigate('/booking-history', { replace: true });
-
     } catch (error) {
       console.error('Payment error:', error);
-      console.error('Error response:', error.response?.data);
-      
-      if (error.response?.status === 401) {
-        toast.error('Please login to continue');
-        handleClose();
-        navigate('/login', { replace: true });
-      } else {
-        const errorMessage = error.response?.data?.message || error.message || 'Payment failed. Please try again.';
-        console.error('Error message:', errorMessage);
-        toast.error(errorMessage);
-      }
+      toast.error(error.response?.data?.message || 'Booking failed. Please try again.');
     } finally {
-      setLoading(false);
-      setPaymentProcessing(false);
+      setIsProcessing(false);
     }
   };
 
   return (
-    <Modal 
-      show={show} 
-      onHide={() => !paymentProcessing && handleClose()} 
-      centered 
-      size="lg"
-      backdrop={paymentProcessing ? 'static' : true}
-      keyboard={!paymentProcessing}
-    >
-      <Modal.Header closeButton={!paymentProcessing}>
-        <Modal.Title>Complete Your Payment</Modal.Title>
+    <Modal show={show} onHide={handleClose} size="lg">
+      <Modal.Header closeButton>
+        <Modal.Title>Complete Your Booking</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <div className="text-center mb-4">
-          <h4 className="mb-3">Total Amount: Rs. {amount}</h4>
-          <p className="text-muted">Choose your preferred payment method</p>
-        </div>
+        <Form onSubmit={handleSubmit}>
+          {/* Guest Information */}
+          <Form.Group className="mb-3">
+            <Form.Label>Guest Name</Form.Label>
+            <Form.Control
+              type="text"
+              value={paymentData.guestName}
+              onChange={(e) => setPaymentData(prev => ({ ...prev, guestName: e.target.value }))}
+              required
+            />
+          </Form.Group>
 
-        <Form onSubmit={handlePayment}>
-          <Row className="g-4">
-            {Object.values(PAYMENT_METHODS).map((option) => (
-              <Col md={6} key={option.id}>
-                <div
-                  className={`payment-option p-3 rounded border ${
-                    paymentMethod === option.id ? 'border-primary' : ''
-                  }`}
-                  onClick={() => !paymentProcessing && setPaymentMethod(option.id)}
-                  style={{ cursor: paymentProcessing ? 'not-allowed' : 'pointer' }}
-                >
-                  <div className="d-flex align-items-center">
-                    <Form.Check
-                      type="radio"
-                      name="paymentMethod"
-                      id={option.id}
-                      checked={paymentMethod === option.id}
-                      onChange={() => !paymentProcessing && setPaymentMethod(option.id)}
-                      disabled={paymentProcessing}
-                    />
-                    <div className="ms-3">
-                      <Image
-                        src={option.logo}
-                        alt={option.name}
-                        style={{ height: '30px' }}
-                      />
-                      <div className="mt-2 small text-muted">{option.name}</div>
-                    </div>
+          <Form.Group className="mb-3">
+            <Form.Label>Phone Number</Form.Label>
+            <Form.Control
+              type="text"
+              value={paymentData.phoneNumber}
+              onChange={(e) => setPaymentData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+              required
+            />
+          </Form.Group>
+
+          {/* Payment Methods */}
+          <div className="mb-4">
+            <h5 className="mb-3">Select Payment Method</h5>
+            <Row xs={1} md={2} lg={4} className="g-3">
+              {paymentMethods.map((method) => (
+                <Col key={method.id}>
+                  <div
+                    className={`payment-method-card ${paymentData.paymentMethod === method.id ? 'selected' : ''}`}
+                    onClick={() => handlePaymentMethodChange(method.id)}
+                  >
+                    <img src={method.logo} alt={method.name} className="payment-logo" />
+                    <span>{method.name}</span>
                   </div>
-                </div>
-              </Col>
-            ))}
-          </Row>
+                </Col>
+              ))}
+            </Row>
+          </div>
 
-          <div className="text-center mt-4">
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              disabled={!paymentMethod || loading || paymentProcessing}
+          {/* Booking Summary */}
+          <div className="booking-summary">
+            <h5>Booking Summary</h5>
+            <p>Room Type: {selectedRoom?.type}</p>
+            <p>Check-in: {formatDate(bookingDetails?.checkIn)}</p>
+            <p>Check-out: {formatDate(bookingDetails?.checkOut)}</p>
+            <p>Number of Days: {calculateNumberOfDays()}</p>
+            <p>Number of Guests: {bookingDetails?.guests}</p>
+            <p>Total Amount: NPR {calculateTotalAmount()}</p>
+          </div>
+
+          <div className="d-grid gap-2 mt-4">
+            <Button 
+              variant="primary" 
+              type="submit" 
+              disabled={isProcessing || !paymentData.paymentMethod}
             >
-              {loading ? 'Processing...' : 'Confirm Payment'}
+              {isProcessing ? 'Processing...' : 'Confirm Booking'}
             </Button>
           </div>
         </Form>

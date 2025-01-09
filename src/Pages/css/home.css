@@ -293,7 +293,15 @@ margin-top:-11rem;
   .nav-booking .nav-link {
     white-space: nowrap;
   }
-}
+{
+  "data": {
+    "token": "your-jwt-token-here"
+  }
+}{
+  "data": {
+    "token": "your-jwt-token-here"
+  }
+}}
 
 /* Search and filter section */
 .search-filter-section {

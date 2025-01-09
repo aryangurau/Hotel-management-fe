@@ -1,129 +1,178 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
-import { isLoggedIn } from '../Utils/login';
-import { getCurrentUser } from '../Utils/session';
+import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../Utils/axiosInstance';
+import { getCurrentUser, isLoggedIn } from '../Utils/session';
+import { toast } from 'react-toastify';
 
-const BookingModal = ({ show, handleClose, room, onProceedToPayment }) => {
+const BookingModal = ({ show, onHide, room }) => {
   const navigate = useNavigate();
   const [bookingData, setBookingData] = useState({
-    checkIn: '',
-    checkOut: '',
-    guests: 1,
+    checkIn: moment().format('YYYY-MM-DD'),
+    checkOut: moment().add(1, 'days').format('YYYY-MM-DD'),
+    guests: 1
   });
 
+  const maxGuests = room?.maxGuests || 1;
+
   const loggedIn = isLoggedIn();
-  const user = loggedIn ? getCurrentUser() : null;
+  const user = getCurrentUser();
 
   const calculateTotalPrice = () => {
     if (!bookingData.checkIn || !bookingData.checkOut) return 0;
-    const days = moment(bookingData.checkOut).diff(moment(bookingData.checkIn), 'days');
-    return days * room.price;
+    const days = Math.max(1, moment(bookingData.checkOut).diff(moment(bookingData.checkIn), 'days'));
+    return days * (room?.price || 0);
   };
 
-  const handleProceedToPayment = () => {
-    if (!loggedIn || !user) {
-      alert('Please login to book a room');
+  const handleProceedToPayment = async () => {
+    if (!loggedIn) {
+      toast.error('Please login to book a room');
       navigate('/login');
       return;
     }
 
-    if (!bookingData.checkIn || !bookingData.checkOut) {
-      alert('Please select check-in and check-out dates');
-      return;
+    try {
+      const checkInDate = moment(bookingData.checkIn);
+      const checkOutDate = moment(bookingData.checkOut);
+      
+      if (!checkInDate.isValid() || !checkOutDate.isValid()) {
+        toast.error('Please select valid dates');
+        return;
+      }
+
+      if (checkInDate.isSameOrAfter(checkOutDate)) {
+        toast.error('Check-out date must be after check-in date');
+        return;
+      }
+
+      const guests = Number(bookingData.guests);
+      if (guests < 1 || guests > maxGuests) {
+        toast.error(`Number of guests must be between 1 and ${maxGuests}`);
+        return;
+      }
+
+      const numberOfDays = Math.max(1, checkOutDate.diff(checkInDate, 'days'));
+      const totalAmount = numberOfDays * (room?.price || 0);
+
+      const response = await axiosInstance.post('/bookings', {
+        roomId: room._id,
+        checkIn: bookingData.checkIn,
+        checkOut: bookingData.checkOut,
+        guests,
+        numberOfDays,
+        totalAmount,
+        guestName: user.name,
+        phoneNumber: user.phoneNumber || ''
+      });
+
+      if (response.data.success) {
+        toast.success('Booking created successfully');
+        onHide();
+        navigate('/booking-history');
+      } else {
+        throw new Error(response.data.message || 'Failed to create booking');
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      toast.error(error.response?.data?.message || 'Failed to create booking');
     }
-
-    if (moment(bookingData.checkIn).isSameOrAfter(bookingData.checkOut)) {
-      alert('Check-out date must be after check-in date');
-      return;
-    }
-
-    if (bookingData.guests < 1 || bookingData.guests > room.maxGuests) {
-      alert(`Number of guests must be between 1 and ${room.maxGuests}`);
-      return;
-    }
-
-    const bookingDetails = {
-      ...bookingData,
-      roomId: room._id,
-      amount: calculateTotalPrice(),
-      roomType: room.type,
-      user: user._id
-    };
-
-    onProceedToPayment(bookingDetails);
   };
 
   return (
-    <Modal show={show} onHide={handleClose} size="lg">
+    <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Book {room?.name}</Modal.Title>
+        <Modal.Title>Book Room</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <div className="mb-4">
-          <h5>Room Details</h5>
-          <p><strong>Type:</strong> {room?.type}</p>
-          <p><strong>Price:</strong> NPR {room?.price?.toLocaleString()}/night</p>
-          <p><strong>Max Guests:</strong> {room?.maxGuests}</p>
-          <p><strong>Description:</strong> {room?.description}</p>
-        </div>
-
         <Form>
-          <Row>
+          <Row className="mb-3">
             <Col md={6}>
-              <Form.Group className="mb-3">
+              <Form.Group>
                 <Form.Label>Check-in Date</Form.Label>
                 <Form.Control
                   type="date"
-                  min={moment().format('YYYY-MM-DD')}
                   value={bookingData.checkIn}
-                  onChange={(e) => setBookingData({ ...bookingData, checkIn: e.target.value })}
-                  required
+                  min={moment().format('YYYY-MM-DD')}
+                  onChange={(e) => setBookingData(prev => ({ ...prev, checkIn: e.target.value }))}
                 />
               </Form.Group>
             </Col>
             <Col md={6}>
-              <Form.Group className="mb-3">
+              <Form.Group>
                 <Form.Label>Check-out Date</Form.Label>
                 <Form.Control
                   type="date"
-                  min={moment(bookingData.checkIn || undefined).add(1, 'day').format('YYYY-MM-DD')}
                   value={bookingData.checkOut}
-                  onChange={(e) => setBookingData({ ...bookingData, checkOut: e.target.value })}
-                  required
+                  min={moment(bookingData.checkIn).add(1, 'days').format('YYYY-MM-DD')}
+                  onChange={(e) => setBookingData(prev => ({ ...prev, checkOut: e.target.value }))}
                 />
               </Form.Group>
             </Col>
           </Row>
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Number of Guests</Form.Label>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Number of Guests</Form.Label>
+            <div className="d-flex align-items-center">
+              <Button 
+                variant="outline-secondary" 
+                onClick={() => {
+                  setBookingData(prev => ({
+                    ...prev,
+                    guests: Math.max(1, Number(prev.guests) - 1)
+                  }));
+                }}
+                disabled={bookingData.guests <= 1}
+              >
+                -
+              </Button>
+              <div style={{ width: '60px', margin: '0 10px' }}>
                 <Form.Control
-                  type="number"
-                  min="1"
-                  max={room?.maxGuests}
+                  type="text"
                   value={bookingData.guests}
-                  onChange={(e) => setBookingData({ ...bookingData, guests: parseInt(e.target.value) })}
-                  required
+                  style={{ textAlign: 'center' }}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/[^0-9]/g, '');
+                    if (value === '') value = '1';
+                    const numValue = Math.min(Math.max(Number(value), 1), maxGuests);
+                    setBookingData(prev => ({ ...prev, guests: numValue }));
+                  }}
+                  onBlur={() => {
+                    const value = Math.min(Math.max(Number(bookingData.guests) || 1, 1), maxGuests);
+                    setBookingData(prev => ({ ...prev, guests: value }));
+                  }}
                 />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Total Price</Form.Label>
-                <div className="form-control bg-light">
-                  NPR {calculateTotalPrice().toLocaleString()}
-                </div>
-              </Form.Group>
-            </Col>
-          </Row>
+              </div>
+              <Button 
+                variant="outline-secondary" 
+                onClick={() => {
+                  setBookingData(prev => ({
+                    ...prev,
+                    guests: Math.min(Number(prev.guests) + 1, maxGuests)
+                  }));
+                }}
+                disabled={bookingData.guests >= maxGuests}
+              >
+                +
+              </Button>
+            </div>
+            <Form.Text className="text-muted">
+              Maximum {maxGuests} guests allowed
+            </Form.Text>
+          </Form.Group>
+
+          <div className="booking-summary mt-4">
+            <h5>Booking Summary</h5>
+            <p>Room Type: {room?.type}</p>
+            <p>Room Rate: NPR {room?.price}/night</p>
+            <p>Number of Days: {moment(bookingData.checkOut).diff(moment(bookingData.checkIn), 'days')}</p>
+            <p>Total Amount: NPR {calculateTotalPrice()}</p>
+          </div>
         </Form>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>
-          Cancel
+        <Button variant="secondary" onClick={onHide}>
+          Close
         </Button>
         <Button 
           variant="primary" 

@@ -1,27 +1,24 @@
-export const setToken = (data) => localStorage.setItem("access_token", data);
-export const getToken = () => localStorage.getItem("access_token");
-export const removeToken = () => localStorage.removeItem("access_token");
+export const setToken = (data) => sessionStorage.setItem("token", data);
+export const getToken = () => sessionStorage.getItem("token");
+export const removeToken = () => sessionStorage.removeItem("token");
 
 export const setCurrentUser = (data) => {
   if (typeof data === 'string') {
-    localStorage.setItem("currentUser", data);
+    sessionStorage.setItem("user", data);
   } else {
-    localStorage.setItem("currentUser", JSON.stringify(data));
+    sessionStorage.setItem("user", JSON.stringify(data));
   }
 };
 
 export const getCurrentUser = () => {
   try {
-    const userStr = localStorage.getItem("currentUser");
+    const userStr = sessionStorage.getItem("user");
     if (!userStr) return null;
-    
     try {
-      // Try to parse it as JSON
       return JSON.parse(userStr);
-    } catch {
-      // If parsing fails, return the string as is
-      // (in case it's already stringified JSON)
-      return userStr;
+    } catch (error) {
+      console.error('Error parsing user from session:', error);
+      return null;
     }
   } catch (error) {
     console.error('Error getting user data:', error);
@@ -29,6 +26,22 @@ export const getCurrentUser = () => {
   }
 };
 
-export const removeCurrentUser = () => localStorage.removeItem("currentUser");
+export const removeCurrentUser = () => sessionStorage.removeItem("user");
 
-export const removeAll = () => localStorage.clear();
+export const isLoggedIn = () => {
+  const user = getCurrentUser();
+  const token = getToken();
+  return !!(user && token);
+};
+
+export const setUserSession = (token, user) => {
+  setToken(token);
+  setCurrentUser(user);
+};
+
+export const removeUserSession = () => {
+  removeToken();
+  removeCurrentUser();
+};
+
+export const removeAll = () => sessionStorage.clear();
