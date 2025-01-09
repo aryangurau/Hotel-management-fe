@@ -24,13 +24,21 @@ const MyBookings = () => {
       console.log('Fetching bookings...');
       // Get user data from session storage
       const userStr = sessionStorage.getItem('user');
-      if (!userStr) {
+      const token = sessionStorage.getItem('token');
+      
+      if (!userStr || !token) {
         throw new Error('User session not found');
       }
+      
       const user = JSON.parse(userStr);
       
       // Fetch bookings for the current user
-      const response = await axiosInstance.get(`/bookings/user/${user._id}`);
+      const response = await axiosInstance.get(`/bookings/user/${user._id}`, {
+        headers: {
+          'access_token': token
+        }
+      });
+      
       console.log('Bookings response:', response.data);
       
       if (response.data?.data) {
@@ -40,7 +48,11 @@ const MyBookings = () => {
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
-      toast.error(error.response?.data?.message || error.message || 'Failed to fetch bookings');
+      if (error.response?.status === 401) {
+        toast.error('Your session has expired. Please login again.');
+      } else {
+        toast.error(error.response?.data?.message || error.message || 'Failed to fetch bookings');
+      }
     } finally {
       setLoading(false);
     }

@@ -3,11 +3,13 @@ import { Modal, Button, Form, Alert } from 'react-bootstrap';
 import { useDispatch } from 'react-redux';
 import { httpClient } from '../Utils/httpClient';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 const PaymentModal = ({ show, onHide, bookingData }) => {
     const [paymentMethod, setPaymentMethod] = useState('');
     const [loading, setLoading] = useState(false);
     const dispatch = useDispatch();
+    const navigate = useNavigate();
 
     const handlePayment = async (e) => {
         e.preventDefault();
@@ -26,12 +28,16 @@ const PaymentModal = ({ show, onHide, bookingData }) => {
                 paymentMethod
             });
 
-            if (bookingResponse.data.success) {
+            if (bookingResponse?.data?.success) {
                 toast.success('Booking confirmed successfully!');
+                // First hide the modal
                 onHide();
-                window.location.href = '/booking-history';
+                // Then navigate after a short delay to ensure modal is closed
+                setTimeout(() => {
+                    navigate('/booking-history');
+                }, 100);
             } else {
-                throw new Error(bookingResponse.data.message || 'Booking failed');
+                throw new Error(bookingResponse?.data?.message || 'Booking failed');
             }
         } catch (error) {
             console.error('Payment error:', error);

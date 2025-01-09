@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Badge, Container, Pagination, Form, Row, Col, Alert } from 'react-bootstrap';
+import { Table, Badge, Container, Pagination, Form, Row, Col, Alert, Card } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { listOrders } from '../../slices/orderSlice';
 import { Notify } from '../../components/Notify';
 import { useNavigate } from 'react-router-dom';
+import { FaUser, FaEnvelope, FaPhone, FaBed, FaCalendarAlt, FaCreditCard } from 'react-icons/fa';
 
 const AdminOrders = () => {
   const dispatch = useDispatch();
@@ -16,7 +17,11 @@ const AdminOrders = () => {
   useEffect(() => {
     // Check user session and roles
     const userStr = sessionStorage.getItem('user');
-    if (!userStr) {
+    const token = sessionStorage.getItem('token');
+    
+    if (!userStr || !token) {
+      console.log('Missing auth data:', { hasUser: !!userStr, hasToken: !!token });
+      Notify.error('Please log in to continue');
       navigate('/login');
       return;
     }
@@ -24,6 +29,8 @@ const AdminOrders = () => {
     try {
       const user = JSON.parse(userStr);
       if (!user.roles?.includes('admin')) {
+        console.log('User is not admin:', user.roles);
+        Notify.error('Access denied: Admin only');
         navigate('/');
         return;
       }
@@ -38,30 +45,45 @@ const AdminOrders = () => {
       })).unwrap()
         .catch(error => {
           console.error('Error fetching orders:', error);
-          Notify.error(error.message || 'Failed to fetch orders');
+          if (error.message?.toLowerCase().includes('token')) {
+            console.log('Token error, redirecting to login');
+            sessionStorage.clear();
+            navigate('/login');
+          } else {
+            Notify.error(error.message || 'Failed to fetch orders');
+          }
         });
     } catch (error) {
       console.error('Error processing user data:', error);
+      sessionStorage.clear();
       navigate('/login');
     }
   }, [dispatch, page, limit, statusFilter, navigate]);
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status, type = 'status') => {
     const variants = {
-      confirmed: 'success',
-      pending: 'warning',
-      cancelled: 'danger',
-      unpaid: 'secondary',
-      'checked-in': 'info',
-      'checked-out': 'dark'
+      status: {
+        unpaid: 'warning',
+        confirmed: 'success',
+        cancelled: 'danger',
+        completed: 'info',
+        pending: 'secondary'
+      },
+      payment: {
+        paid: 'success',
+        unpaid: 'warning',
+        refunded: 'info',
+        failed: 'danger',
+        pending: 'secondary'
+      }
     };
-    return <Badge bg={variants[status?.toLowerCase()] || 'secondary'}>
-      {status || 'N/A'}
-    </Badge>;
-  };
-
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
+    
+    const variant = variants[type]?.[status?.toLowerCase()] || 'secondary';
+    return (
+      <Badge bg={variant}>
+        {status || 'N/A'}
+      </Badge>
+    );
   };
 
   const formatDate = (dateString) => {
@@ -79,11 +101,22 @@ const AdminOrders = () => {
     }
   };
 
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount || 0);
+  };
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
   return (
     <Container fluid className="py-3">
       <Row className="mb-3">
         <Col>
-          <h2 className="mb-3">Booking Management</h2>
+          <h2 className="mb-3">Order Management</h2>
           <Form.Group as={Row} className="mb-3">
             <Form.Label column sm={2}>Filter by Status:</Form.Label>
             <Col sm={4}>
@@ -92,11 +125,11 @@ const AdminOrders = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">All Status</option>
-                <option value="confirmed">Confirmed</option>
                 <option value="pending">Pending</option>
+                <option value="unpaid">Unpaid</option>
+                <option value="confirmed">Confirmed</option>
                 <option value="cancelled">Cancelled</option>
-                <option value="checked-in">Checked In</option>
-                <option value="checked-out">Checked Out</option>
+                <option value="completed">Completed</option>
               </Form.Select>
             </Col>
           </Form.Group>
@@ -109,86 +142,145 @@ const AdminOrders = () => {
         </Alert>
       )}
 
-      <Table responsive striped bordered hover>
-        <thead>
-          <tr>
-            <th>Booking ID</th>
-            <th>Guest Name</th>
-            <th>Phone</th>
-            <th>Check In</th>
-            <th>Check Out</th>
-            <th>Status</th>
-            <th>Amount</th>
-            <th>Payment</th>
-            <th>Created At</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr>
-              <td colSpan="9" className="text-center">Loading...</td>
-            </tr>
-          ) : orders.length === 0 ? (
-            <tr>
-              <td colSpan="9" className="text-center">No bookings found</td>
-            </tr>
-          ) : (
-            orders.map((order) => (
-              <tr key={order._id}>
-                <td>{order._id}</td>
-                <td>{order.guestName}</td>
-                <td>{order.phoneNumber}</td>
-                <td>{formatDate(order.checkIn)}</td>
-                <td>{formatDate(order.checkOut)}</td>
-                <td>{getStatusBadge(order.status)}</td>
-                <td>${order.totalAmount}</td>
-                <td>{getStatusBadge(order.paymentStatus)}</td>
-                <td>{formatDate(order.createdAt)}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </Table>
-
-      {totalPages > 1 && (
-        <div className="d-flex justify-content-center mt-3">
-          <Pagination>
-            <Pagination.First 
-              onClick={() => handlePageChange(1)} 
-              disabled={currentPage === 1}
-            />
-            <Pagination.Prev 
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            />
-            
-            {[...Array(totalPages)].map((_, idx) => (
-              <Pagination.Item
-                key={idx + 1}
-                active={idx + 1 === currentPage}
-                onClick={() => handlePageChange(idx + 1)}
-              >
-                {idx + 1}
-              </Pagination.Item>
-            ))}
-            
-            <Pagination.Next
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            />
-            <Pagination.Last
-              onClick={() => handlePageChange(totalPages)}
-              disabled={currentPage === totalPages}
-            />
-          </Pagination>
+      {loading ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-2">Loading orders...</p>
         </div>
-      )}
+      ) : !orders || orders.length === 0 ? (
+        <Alert variant="info" className="text-center">
+          <p className="mb-0">No orders found</p>
+          {statusFilter && (
+            <small>Try clearing the status filter to see all orders</small>
+          )}
+        </Alert>
+      ) : (
+        <>
+          <div className="order-cards">
+            {orders.map((order) => (
+              <Card key={order._id} className="mb-3 shadow-sm">
+                <Card.Header className="d-flex justify-content-between align-items-center bg-light">
+                  <div>
+                    <strong className="text-primary">Order #{order.orderNo}</strong>
+                    <div className="small text-muted">
+                      Created: {formatDate(order.createdAt)}
+                    </div>
+                  </div>
+                  <div className="d-flex gap-2">
+                    {getStatusBadge(order.status, 'status')}
+                    {getStatusBadge(order.paymentStatus, 'payment')}
+                  </div>
+                </Card.Header>
+                <Card.Body>
+                  <Row>
+                    <Col md={4}>
+                      <h6 className="text-secondary">
+                        <FaUser className="me-2" />Customer Details
+                      </h6>
+                      <p className="mb-1">
+                        <strong>{order.customer.name}</strong>
+                      </p>
+                      <p className="mb-1 small">
+                        <FaEnvelope className="me-1" />{order.customer.email}
+                      </p>
+                      <p className="mb-1 small">
+                        <FaPhone className="me-1" />{order.customer.phone}
+                      </p>
+                    </Col>
+                    <Col md={4}>
+                      <h6 className="text-secondary">
+                        <FaBed className="me-2" />Room Details
+                      </h6>
+                      {order.room ? (
+                        <>
+                          <p className="mb-1">
+                            <strong>{order.room.name}</strong>
+                          </p>
+                          <p className="mb-1 small">
+                            Type: {order.room.type}
+                          </p>
+                          <p className="mb-1 small">
+                            Capacity: {order.room.totalGuests} guests
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-muted">Room details not available</p>
+                      )}
+                    </Col>
+                    <Col md={4}>
+                      <h6 className="text-secondary">
+                        <FaCalendarAlt className="me-2" />Booking Details
+                      </h6>
+                      <p className="mb-1">
+                        Check-in: {formatDate(order.checkIn)}
+                      </p>
+                      <p className="mb-1">
+                        Check-out: {formatDate(order.checkOut)}
+                      </p>
+                      <p className="mb-1">
+                        <FaCreditCard className="me-1" />
+                        {order.paymentMethod} - {formatCurrency(order.amount)}
+                      </p>
+                    </Col>
+                  </Row>
+                </Card.Body>
+                <Card.Footer className="text-muted small bg-light">
+                  <Row className="align-items-center">
+                    <Col>
+                      Created by: {order.createdBy?.name || 'N/A'} ({order.createdBy?.email || 'N/A'})
+                    </Col>
+                    <Col xs="auto">
+                      Last updated: {formatDate(order.updatedAt)}
+                    </Col>
+                  </Row>
+                </Card.Footer>
+              </Card>
+            ))}
+          </div>
 
-      <div className="text-center mt-3">
-        <small className="text-muted">
-          Showing {orders.length} of {total} bookings
-        </small>
-      </div>
+          {totalPages > 1 && (
+            <div className="d-flex justify-content-center mt-4">
+              <Pagination>
+                <Pagination.First 
+                  onClick={() => handlePageChange(1)} 
+                  disabled={currentPage === 1}
+                />
+                <Pagination.Prev 
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                />
+                
+                {[...Array(totalPages)].map((_, idx) => (
+                  <Pagination.Item
+                    key={idx + 1}
+                    active={idx + 1 === currentPage}
+                    onClick={() => handlePageChange(idx + 1)}
+                  >
+                    {idx + 1}
+                  </Pagination.Item>
+                ))}
+                
+                <Pagination.Next
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                />
+                <Pagination.Last
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage === totalPages}
+                />
+              </Pagination>
+            </div>
+          )}
+
+          <div className="text-center mt-3">
+            <small className="text-muted">
+              Showing {orders.length} of {total} orders
+            </small>
+          </div>
+        </>
+      )}
     </Container>
   );
 };

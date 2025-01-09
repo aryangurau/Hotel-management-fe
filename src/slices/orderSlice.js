@@ -8,8 +8,7 @@ const initialState = {
   loading: false,
   error: null,
   currentPage: 1,
-  limit: 10,
-  totalPages: 1,
+  totalPages: 0,
   total: 0,
   paymentProcessing: false,
   paymentError: null,
@@ -34,7 +33,7 @@ export const createOrder = createAsyncThunk(
         }
       };
 
-      console.log('Sending order to API:', JSON.stringify(order, null, 2));
+      console.log('Sending booking to API:', JSON.stringify(order, null, 2));
       
       const response = await axiosInstance.post(URLS.BOOKINGS, order);
       console.log('API Response:', response.data);
@@ -42,10 +41,10 @@ export const createOrder = createAsyncThunk(
       if (response.data?.data) {
         return response.data.data;
       }
-      throw new Error(response.data?.msg || 'Failed to create order');
+      throw new Error(response.data?.msg || 'Failed to create booking');
     } catch (error) {
-      console.error('Order creation error:', error);
-      return rejectWithValue(error.response?.data?.msg || error.message || 'Failed to create order');
+      console.error('Booking creation error:', error);
+      return rejectWithValue(error.response?.data?.msg || error.message || 'Failed to create booking');
     }
   }
 );
@@ -70,49 +69,99 @@ export const listOrders = createAsyncThunk(
       queryParams.append('page', page);
       queryParams.append('limit', limit);
       
-      // Add filter parameters if they exist
+      // Add filter parameters
       Object.entries(filter).forEach(([key, value]) => {
         if (value) queryParams.append(key, value);
       });
       
-      // Use admin bookings endpoint for admin users
-      let url;
-      if (user.roles.includes('admin')) {
-        url = `${URLS.ADMIN_BOOKINGS}?${queryParams.toString()}`;
+      // Determine the base URL based on user role
+      let baseUrl = URLS.ORDERS;
+      if (user.roles?.includes('admin')) {
+        baseUrl = URLS.ADMIN_ORDERS;
       } else {
-        url = `${URLS.BOOKINGS}/user/${user._id}?${queryParams.toString()}`;
+        baseUrl = `${URLS.ORDERS}/my-orders`;
       }
       
+      const url = `${baseUrl}?${queryParams.toString()}`;
       console.log('Making request to:', url);
       
       const response = await axiosInstance.get(url);
-      console.log('Orders response:', response.data);
+      console.log('Raw response:', response);
+      console.log('Response data:', response.data);
       
-      if (!response.data) {
-        throw new Error('No data received from server');
+      // Handle empty or invalid response
+      if (!response?.data?.data?.data) {
+        console.log('Empty or invalid response structure');
+        return {
+          orders: [],
+          currentPage: 1,
+          totalPages: 0,
+          total: 0
+        };
       }
-      
-      // Map the response data to match our state structure
-      const bookings = response.data.data || [];
-      const total = response.data.total || 0;
-      const totalPages = response.data.pages || Math.ceil(total / limit);
+
+      // Extract orders array from nested data structure
+      const responseData = response.data.data;
+      console.log('Response data object:', responseData);
+
+      const orders = Array.isArray(responseData.data) ? responseData.data : [];
+      console.log('Extracted orders array:', orders);
+
+      const total = responseData.total || 0;
+      const totalPages = responseData.totalPages || Math.ceil(total / limit);
+      const currentPage = parseInt(page);
+
+      if (!Array.isArray(orders)) {
+        console.error('Orders is not an array:', orders);
+        return {
+          orders: [],
+          currentPage,
+          totalPages,
+          total
+        };
+      }
+
+      console.log('Processing orders array of length:', orders.length);
+
+      // Map orders to consistent format
+      const mappedOrders = orders.map(order => {
+        console.log('Processing order:', order);
+        return {
+          _id: order._id || '',
+          orderNo: order.orderNo || order.number || 'N/A',
+          room: order.room ? {
+            _id: order.room._id || '',
+            name: order.room.name || 'N/A',
+            type: order.room.type || 'N/A',
+            price: order.room.price || 0,
+            status: order.room.status || 'N/A',
+            totalGuests: order.room.totalGuests || 0
+          } : null,
+          customer: {
+            name: order.customer?.name || order.name || 'N/A',
+            email: order.customer?.email || order.email || 'N/A',
+            phone: order.customer?.phone || order.phoneNumber || 'N/A'
+          },
+          amount: order.amount || order.totalAmount || 0,
+          status: order.status || 'pending',
+          paymentStatus: order.paymentStatus || order.payment?.status || 'pending',
+          paymentMethod: order.paymentMethod || order.payment?.method || 'N/A',
+          checkIn: order.checkIn || order.startDate || null,
+          checkOut: order.checkOut || order.endDate || null,
+          createdBy: order.created_by ? {
+            name: order.created_by.name || 'N/A',
+            email: order.created_by.email || 'N/A'
+          } : null,
+          createdAt: order.createdAt || null,
+          updatedAt: order.updatedAt || null
+        };
+      });
+
+      console.log('Final mapped orders:', mappedOrders);
       
       return {
-        orders: bookings.map(booking => ({
-          _id: booking._id,
-          roomId: booking.roomId,
-          userId: booking.userId,
-          guestName: booking.guestName || 'N/A',
-          phoneNumber: booking.phoneNumber || 'N/A',
-          checkIn: booking.checkIn,
-          checkOut: booking.checkOut,
-          status: booking.status || 'pending',
-          totalAmount: booking.totalAmount,
-          paymentStatus: booking.paymentStatus || 'pending',
-          createdAt: booking.createdAt,
-          updatedAt: booking.updatedAt
-        })),
-        currentPage: page,
+        orders: mappedOrders,
+        currentPage,
         totalPages,
         total
       };
@@ -126,7 +175,14 @@ export const listOrders = createAsyncThunk(
 
 const orderSlice = createSlice({
   name: "orders",
-  initialState,
+  initialState: {
+    orders: [],
+    currentPage: 1,
+    totalPages: 0,
+    total: 0,
+    loading: false,
+    error: null,
+  },
   reducers: {
     clearError: (state) => {
       state.error = null;
@@ -138,7 +194,14 @@ const orderSlice = createSlice({
       state.paymentProcessing = false;
       state.lastPaymentResult = action.payload;
     },
-    resetOrderState: () => initialState
+    resetOrderState: () => initialState,
+    clearOrders: (state) => {
+      state.orders = [];
+      state.currentPage = 1;
+      state.totalPages = 0;
+      state.total = 0;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -176,5 +239,5 @@ const orderSlice = createSlice({
   }
 });
 
-export const { clearError, clearPaymentResult, paymentResult, resetOrderState } = orderSlice.actions;
+export const { clearError, clearPaymentResult, paymentResult, resetOrderState, clearOrders } = orderSlice.actions;
 export default orderSlice.reducer;
