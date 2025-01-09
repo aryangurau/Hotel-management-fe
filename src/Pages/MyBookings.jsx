@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Card, Row, Col, Badge, Spinner } from 'react-bootstrap';
+import { Container, Card, Row, Col, Badge, Spinner, Form, InputGroup, Button } from 'react-bootstrap';
 import { default as axiosInstance } from '../Utils/axiosInstance';
 import moment from 'moment';
 import { toast } from 'react-toastify';
@@ -8,6 +8,12 @@ import 'react-toastify/dist/ReactToastify.css';
 const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    status: 'ALL',
+    startDate: '',
+    endDate: '',
+    searchTerm: ''
+  });
 
   useEffect(() => {
     fetchBookings();
@@ -53,6 +59,46 @@ const MyBookings = () => {
     }
   };
 
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      status: 'ALL',
+      startDate: '',
+      endDate: '',
+      searchTerm: ''
+    });
+  };
+
+  const filteredBookings = bookings.filter(booking => {
+    // Status filter
+    if (filters.status !== 'ALL' && booking.status !== filters.status) {
+      return false;
+    }
+
+    // Date range filter
+    if (filters.startDate && moment(booking.checkIn).isBefore(filters.startDate)) {
+      return false;
+    }
+    if (filters.endDate && moment(booking.checkOut).isAfter(filters.endDate)) {
+      return false;
+    }
+
+    // Search term filter
+    if (filters.searchTerm) {
+      const searchLower = filters.searchTerm.toLowerCase();
+      return (
+        booking.roomId?.name?.toLowerCase().includes(searchLower) ||
+        booking.roomId?.type?.toLowerCase().includes(searchLower) ||
+        booking._id.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return true;
+  });
+
   if (loading) {
     return (
       <Container className="py-5 text-center">
@@ -66,13 +112,73 @@ const MyBookings = () => {
   return (
     <Container className="py-5">
       <h2 className="mb-4">My Bookings</h2>
-      {bookings.length === 0 ? (
+
+      {/* Filters */}
+      <Card className="mb-4">
+        <Card.Body>
+          <Row className="g-3">
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label>Status</Form.Label>
+                <Form.Select
+                  value={filters.status}
+                  onChange={(e) => handleFilterChange('status', e.target.value)}
+                >
+                  <option value="ALL">All Status</option>
+                  <option value="CONFIRMED">Confirmed</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label>Check-in From</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                />
+              </Form.Group>
+            </Col>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label>Check-out To</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                />
+              </Form.Group>
+            </Col>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label>Search</Form.Label>
+                <InputGroup>
+                  <Form.Control
+                    type="text"
+                    placeholder="Search rooms..."
+                    value={filters.searchTerm}
+                    onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
+                  />
+                  <Button variant="outline-secondary" onClick={resetFilters}>
+                    Reset
+                  </Button>
+                </InputGroup>
+              </Form.Group>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+
+      {/* Results */}
+      {filteredBookings.length === 0 ? (
         <div className="text-center text-muted">
           <p>No bookings found</p>
         </div>
       ) : (
         <Row xs={1} className="g-4">
-          {bookings.map((booking) => (
+          {filteredBookings.map((booking) => (
             <Col key={booking._id}>
               <Card>
                 <Card.Body>
