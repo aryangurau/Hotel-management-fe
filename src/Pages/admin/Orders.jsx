@@ -1,141 +1,194 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Badge, Container, Pagination, Form, Row, Col } from 'react-bootstrap';
+import { Table, Badge, Container, Pagination, Form, Row, Col, Alert } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { listOrders } from '../../slices/orderSlice';
 import { Notify } from '../../components/Notify';
-import { getCurrentUser } from '../../Utils/session';
+import { useNavigate } from 'react-router-dom';
 
 const AdminOrders = () => {
   const dispatch = useDispatch();
-  const { orders = [], loading, error, currentPage, totalPages } = useSelector((state) => state.orders);
+  const navigate = useNavigate();
+  const { orders = [], loading, error, currentPage, totalPages, total } = useSelector((state) => state.orders);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [statusFilter, setStatusFilter] = useState('');
   
-  // Get user data safely
-  const userData = (() => {
-    const user = getCurrentUser();
-    if (!user) return {};
-    return typeof user === 'string' ? JSON.parse(user) : user;
-  })();
-  
-  const isAdmin = userData?.roles?.includes('admin');
-
   useEffect(() => {
-    const filter = {
-      ...(statusFilter && { status: statusFilter }),
-      ...((!isAdmin && userData.email) && { updated_by: userData.email })
-    };
+    // Check user session and roles
+    const userStr = sessionStorage.getItem('user');
+    if (!userStr) {
+      navigate('/login');
+      return;
+    }
 
-    dispatch(listOrders({ page, limit, filter }));
-  }, [dispatch, page, limit, statusFilter, isAdmin, userData.email]);
+    try {
+      const user = JSON.parse(userStr);
+      if (!user.roles?.includes('admin')) {
+        navigate('/');
+        return;
+      }
 
-  if (error) {
-    return <Notify msg={error.message || error} variant="danger" />;
-  }
+      console.log('Fetching orders with filter:', { statusFilter });
+      const filter = statusFilter ? { status: statusFilter } : {};
+      
+      dispatch(listOrders({ 
+        page, 
+        limit, 
+        filter 
+      })).unwrap()
+        .catch(error => {
+          console.error('Error fetching orders:', error);
+          Notify.error(error.message || 'Failed to fetch orders');
+        });
+    } catch (error) {
+      console.error('Error processing user data:', error);
+      navigate('/login');
+    }
+  }, [dispatch, page, limit, statusFilter, navigate]);
 
   const getStatusBadge = (status) => {
     const variants = {
       confirmed: 'success',
       pending: 'warning',
       cancelled: 'danger',
-      unpaid: 'secondary'
+      unpaid: 'secondary',
+      'checked-in': 'info',
+      'checked-out': 'dark'
     };
-    return <Badge bg={variants[status] || 'secondary'}>{status}</Badge>;
+    return <Badge bg={variants[status?.toLowerCase()] || 'secondary'}>
+      {status || 'N/A'}
+    </Badge>;
   };
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
+  };
+
   return (
-    <Container className="py-4">
-      <h2 className="mb-4">Order Management</h2>
-      
-      <Row className="mb-4">
-        <Col md={4}>
-          <Form.Group>
-            <Form.Label>Filter by Status</Form.Label>
-            <Form.Select 
-              value={statusFilter} 
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="">All Status</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="pending">Pending</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="unpaid">Unpaid</option>
-            </Form.Select>
+    <Container fluid className="py-3">
+      <Row className="mb-3">
+        <Col>
+          <h2 className="mb-3">Booking Management</h2>
+          <Form.Group as={Row} className="mb-3">
+            <Form.Label column sm={2}>Filter by Status:</Form.Label>
+            <Col sm={4}>
+              <Form.Select 
+                value={statusFilter} 
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">All Status</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="pending">Pending</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="checked-in">Checked In</option>
+                <option value="checked-out">Checked Out</option>
+              </Form.Select>
+            </Col>
           </Form.Group>
         </Col>
       </Row>
 
-      {loading ? (
-        <div className="text-center">Loading orders...</div>
-      ) : (
-        <>
-          <Table responsive striped bordered hover>
-            <thead>
-              <tr>
-                <th>Order No.</th>
-                <th>Room</th>
-                <th>Check In</th>
-                <th>Check Out</th>
-                <th>Total Price</th>
-                <th>Status</th>
-                <th>Created By</th>
-                <th>Created At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => (
-                <tr key={order._id}>
-                  <td>{order.orderNo}</td>
-                  <td>{order.room?.name || 'N/A'}</td>
-                  <td>{new Date(order.checkIn).toLocaleDateString()}</td>
-                  <td>{new Date(order.checkOut).toLocaleDateString()}</td>
-                  <td>${order.totalPrice}</td>
-                  <td>{getStatusBadge(order.status)}</td>
-                  <td>{order.created_by?.email || 'N/A'}</td>
-                  <td>{new Date(order.createdAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-
-          <div className="d-flex justify-content-center mt-4">
-            <Pagination>
-              <Pagination.First 
-                disabled={page === 1} 
-                onClick={() => handlePageChange(1)}
-              />
-              <Pagination.Prev 
-                disabled={page === 1} 
-                onClick={() => handlePageChange(page - 1)}
-              />
-              
-              {[...Array(totalPages)].map((_, idx) => (
-                <Pagination.Item
-                  key={idx + 1}
-                  active={idx + 1 === page}
-                  onClick={() => handlePageChange(idx + 1)}
-                >
-                  {idx + 1}
-                </Pagination.Item>
-              ))}
-
-              <Pagination.Next 
-                disabled={page === totalPages} 
-                onClick={() => handlePageChange(page + 1)}
-              />
-              <Pagination.Last 
-                disabled={page === totalPages} 
-                onClick={() => handlePageChange(totalPages)}
-              />
-            </Pagination>
-          </div>
-        </>
+      {error && (
+        <Alert variant="danger" className="mb-3">
+          {error}
+        </Alert>
       )}
+
+      <Table responsive striped bordered hover>
+        <thead>
+          <tr>
+            <th>Booking ID</th>
+            <th>Guest Name</th>
+            <th>Phone</th>
+            <th>Check In</th>
+            <th>Check Out</th>
+            <th>Status</th>
+            <th>Amount</th>
+            <th>Payment</th>
+            <th>Created At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr>
+              <td colSpan="9" className="text-center">Loading...</td>
+            </tr>
+          ) : orders.length === 0 ? (
+            <tr>
+              <td colSpan="9" className="text-center">No bookings found</td>
+            </tr>
+          ) : (
+            orders.map((order) => (
+              <tr key={order._id}>
+                <td>{order._id}</td>
+                <td>{order.guestName}</td>
+                <td>{order.phoneNumber}</td>
+                <td>{formatDate(order.checkIn)}</td>
+                <td>{formatDate(order.checkOut)}</td>
+                <td>{getStatusBadge(order.status)}</td>
+                <td>${order.totalAmount}</td>
+                <td>{getStatusBadge(order.paymentStatus)}</td>
+                <td>{formatDate(order.createdAt)}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </Table>
+
+      {totalPages > 1 && (
+        <div className="d-flex justify-content-center mt-3">
+          <Pagination>
+            <Pagination.First 
+              onClick={() => handlePageChange(1)} 
+              disabled={currentPage === 1}
+            />
+            <Pagination.Prev 
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            />
+            
+            {[...Array(totalPages)].map((_, idx) => (
+              <Pagination.Item
+                key={idx + 1}
+                active={idx + 1 === currentPage}
+                onClick={() => handlePageChange(idx + 1)}
+              >
+                {idx + 1}
+              </Pagination.Item>
+            ))}
+            
+            <Pagination.Next
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            />
+            <Pagination.Last
+              onClick={() => handlePageChange(totalPages)}
+              disabled={currentPage === totalPages}
+            />
+          </Pagination>
+        </div>
+      )}
+
+      <div className="text-center mt-3">
+        <small className="text-muted">
+          Showing {orders.length} of {total} bookings
+        </small>
+      </div>
     </Container>
   );
 };

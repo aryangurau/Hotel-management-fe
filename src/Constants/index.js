@@ -11,6 +11,7 @@ export const URLS = {
   HOTELS: `${BASE_URL}/hotels`,
   ORDERS: `${BASE_URL}/orders`,
   BOOKINGS: `${BASE_URL}/bookings`,
+  ADMIN_BOOKINGS: `${BASE_URL}/admin/bookings`, 
   VERIFY: `${BASE_URL}/users/verify`,
   FORGET_PASSWORD: `${BASE_URL}/users/forget-password`,
   VERIFY_FORGET_PASSWORD: `${BASE_URL}/users/verify-forget-password`,
