@@ -13,10 +13,12 @@
   padding: 1.5rem;
 }
 
-.available-hotels{
-margin-top:-11rem;
+.available-rooms{
+  margin-top: -6rem;
 }
-
+.nav-rooms{
+  background-color: firebrick;
+}
 .hotel-image-wrapper {
   position: relative;
   width: 100%;

@@ -211,7 +211,8 @@ const Home = () => {
       <Banner />
       
       {/* Rooms Section */}
-      <Container className='available-hotels'>
+      <div className='available-rooms'>
+      <Container className=''>
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h2>Available Rooms</h2>
           {searchResults && (
@@ -228,9 +229,9 @@ const Home = () => {
         </div>
 
         {/* Category Navigation */}
-        <Nav 
+        <Nav
           variant="pills" 
-          className="my-4 justify-content-center flex-wrap nav-booking"
+          className="my-4 justify-content-center flex-wrap nav-booking nav-rooms"
           activeKey={selectedCategory}
           onSelect={(category) => setSelectedCategory(category)}
         >
@@ -337,7 +338,7 @@ const Home = () => {
           </>
         )}
       </Container>
-
+</div>
       {/* Room Details Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton>
