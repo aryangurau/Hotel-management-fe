@@ -14,11 +14,12 @@
 }
 
 .available-rooms{
-  margin-top: -6rem;
+  margin-top: -4rem;
+  position: relative;
+  z-index: 2;
 }
-.nav-rooms{
-  background-color: firebrick;
-}
+
+
 .hotel-image-wrapper {
   position: relative;
   width: 100%;
@@ -218,7 +219,7 @@
 
 /* Navigation Pills */
 .nav-booking {
-  background: #fff;
+  background: #0e19f7;
   padding: 1rem;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -295,15 +296,7 @@
   .nav-booking .nav-link {
     white-space: nowrap;
   }
-{
-  "data": {
-    "token": "your-jwt-token-here"
-  }
-}{
-  "data": {
-    "token": "your-jwt-token-here"
-  }
-}}
+}
 
 /* Search and filter section */
 .search-filter-section {

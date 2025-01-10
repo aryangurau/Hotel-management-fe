@@ -231,7 +231,7 @@ const Home = () => {
         {/* Category Navigation */}
         <Nav
           variant="pills" 
-          className="my-4 justify-content-center flex-wrap nav-booking nav-rooms"
+          className="my-4 justify-content-center flex-wrap nav-booking "
           activeKey={selectedCategory}
           onSelect={(category) => setSelectedCategory(category)}
         >
