@@ -30,7 +30,7 @@ const paymentMethods = [
   }
 ];
 
-const Payment = ({ show, handleClose, selectedRoom, bookingDetails }) => {
+const Payment = ({ show, handleClose, selectedRoom, bookingDetails, onPaymentSuccess }) => {
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentData, setPaymentData] = useState({
@@ -80,7 +80,6 @@ const Payment = ({ show, handleClose, selectedRoom, bookingDetails }) => {
 
     setIsProcessing(true);
     try {
-      // Get user data
       const userStr = sessionStorage.getItem('user');
       if (!userStr) {
         throw new Error('User session expired');
@@ -97,19 +96,24 @@ const Payment = ({ show, handleClose, selectedRoom, bookingDetails }) => {
         phoneNumber: paymentData.phoneNumber,
         paymentMethod: paymentData.paymentMethod,
         guests: bookingDetails.guests,
-        userId: user._id // Add user ID to booking
+        userId: user._id,
+        status: 'confirmed',
+        paymentDetails: {
+          method: paymentData.paymentMethod,
+          status: 'paid',
+          paidAt: new Date().toISOString()
+        }
       };
 
-      console.log('Sending booking data:', bookingData);
-
       const response = await axiosInstance.post('/bookings', bookingData);
-      console.log('Booking response:', response.data);
-
+      
       if (response.data.success) {
+        // Only proceed with success actions if booking was created
+        if (onPaymentSuccess) {
+          await onPaymentSuccess();
+        }
         toast.success(`Booking confirmed with ${paymentData.paymentMethod}!`);
         handleClose();
-        // Store booking ID for future reference
-        sessionStorage.setItem('lastBookingId', response.data.bookingId);
         navigate('/booking-history');
       } else {
         throw new Error(response.data?.message || 'Booking failed');
@@ -117,15 +121,12 @@ const Payment = ({ show, handleClose, selectedRoom, bookingDetails }) => {
     } catch (error) {
       console.error('Payment error:', error);
       if (error?.response?.status === 401) {
-        // Session expired during booking
         toast.error('Your session has expired. Please log in again.');
-        // Store booking data
         sessionStorage.setItem('pendingBooking', JSON.stringify({
           selectedRoom,
           bookingDetails,
           paymentData
         }));
-        // Redirect to login
         navigate('/login', { 
           replace: true,
           state: { 
