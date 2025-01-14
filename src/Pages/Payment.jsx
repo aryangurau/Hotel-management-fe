@@ -9,6 +9,7 @@ import { jwtDecode } from "jwt-decode";
 import { getToken } from "../Utils/session";
 import { getUserData } from '../Utils/getUserData';
 import PaymentConfirmationModal from "../components/PaymentConfirmationModal";
+import { removeItem } from "../slices/cartSlice";
 
 const Payment = () => {
   const navigate = useNavigate();
@@ -235,6 +236,8 @@ const Payment = () => {
       
       // Show success message
       dispatch(paymentResult({ success: true }));
+      // Remove the booked room from cart
+      dispatch(removeItem(hotel._id));
       setShowConfirmation(false);
       
       // Show toast and redirect

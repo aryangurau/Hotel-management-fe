@@ -6,6 +6,8 @@ import axiosInstance from '../Utils/axiosInstance';
 import { getToken, getCurrentUser } from '../Utils/session';
 import moment from 'moment';
 import './Payment.css';
+import { useDispatch } from 'react-redux';
+import { removeItem } from '../slices/cartSlice';
 
 const paymentMethods = [
   { 
@@ -32,6 +34,7 @@ const paymentMethods = [
 
 const Payment = ({ show, handleClose, selectedRoom, bookingDetails, onPaymentSuccess }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentData, setPaymentData] = useState({
     guestName: '',
@@ -109,10 +112,12 @@ const Payment = ({ show, handleClose, selectedRoom, bookingDetails, onPaymentSuc
       
       if (response.data.success) {
         // Only proceed with success actions if booking was created
+        dispatch(removeItem(selectedRoom._id));
+        setIsProcessing(false);
+        toast.success('Booking confirmed successfully!');
         if (onPaymentSuccess) {
           await onPaymentSuccess();
         }
-        toast.success(`Booking confirmed with ${paymentData.paymentMethod}!`);
         handleClose();
         navigate('/booking-history');
       } else {
