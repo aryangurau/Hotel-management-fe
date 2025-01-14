@@ -114,7 +114,7 @@ const Payment = () => {
       }
     }
   }, [lastPaymentResult, navigate]);
-
+ 
   const validateForm = () => {
     const newErrors = {};
     
