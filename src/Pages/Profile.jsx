@@ -173,9 +173,9 @@ const Profile = () => {
               onClick={() => fileInputRef.current?.click()}
             >
               <img
-                src={previewImage || user?.profilePicture || 'https://via.placeholder.com/150'}
+                src={previewImage || (user?.profilePicture ? `http://localhost:4999/resources/uploads/${user.profilePicture}` : 'https://via.placeholder.com/150')}
                 alt="Profile"
-                className="rounded-circle"
+                className="rounded-circle mb-3"
                 style={{ width: '150px', height: '150px', objectFit: 'cover' }}
               />
               <div 
@@ -271,7 +271,7 @@ const Profile = () => {
             <Card.Body>
               <div className="text-center mb-4">
                 <img
-                  src={user?.profilePicture || 'https://via.placeholder.com/150'}
+                  src={user?.profilePicture ? `http://localhost:4999/resources/uploads/${user.profilePicture}` : 'https://via.placeholder.com/150'}
                   alt={user?.name}
                   className="rounded-circle mb-3"
                   style={{ width: '150px', height: '150px', objectFit: 'cover' }}
