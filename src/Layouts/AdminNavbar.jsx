@@ -45,7 +45,7 @@ const AdminNavbar = ({ isCollapsed, onToggle }) => {
       >
         <div className="d-flex align-items-center justify-content-between p-3 border-bottom">
           {!isCollapsed && (
-            <Link to="/admin/dashboard" className="text-decoration-none text-white">
+            <Link to="/" className="text-decoration-none text-white">
               <span className="fs-4">XYZ Hotel</span>
             </Link>
           )}
