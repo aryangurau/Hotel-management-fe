@@ -45,6 +45,11 @@ const Home = () => {
   const [roomsPerPage] = useState(6);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchResults, setSearchResults] = useState(null);
+  const [searchParams, setSearchParams] = useState({
+    roomType: '',
+    price: '',
+    guests: ''
+  });
   const location = useLocation();
   const dispatch = useDispatch();
   
@@ -161,6 +166,38 @@ const Home = () => {
     toast.success('Booking confirmed successfully!');
   };
 
+  const handleSearch = (searchParams) => {
+    if (!rooms?.data) return;
+
+    let results = Array.isArray(rooms.data) ? rooms.data : [];
+    
+    // Filter by room type
+    if (searchParams.type) {
+      results = results.filter(room => 
+        room.type.toLowerCase() === searchParams.type.toLowerCase()
+      );
+    }
+
+    // Filter by price
+    if (searchParams.priceRange) {
+      const [min, max] = searchParams.priceRange.split('-').map(p => parseInt(p));
+      results = results.filter(room => 
+        room.price >= min && room.price <= max
+      );
+    }
+
+    // Filter by number of guests
+    if (searchParams.guests) {
+      const guests = parseInt(searchParams.guests);
+      results = results.filter(room => 
+        room.totalGuests >= guests
+      );
+    }
+
+    setSearchResults(results);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
   // Filter rooms based on selected category
   const filteredRooms = useMemo(() => {
     if (!rooms?.data) {
@@ -208,7 +245,7 @@ const Home = () => {
 
   return (
     <div className="home-container">
-      <Banner />
+      <Banner onSearch={handleSearch} />
       
       {/* Rooms Section */}
       <div className='available-rooms'>
@@ -218,7 +255,6 @@ const Home = () => {
           {searchResults && (
             <div>
               <Button variant="outline-secondary" onClick={() => setSearchResults(null)} className="me-2">
-                <FaSearch className="me-2" />
                 Clear Search
               </Button>
               <span className="text-muted">

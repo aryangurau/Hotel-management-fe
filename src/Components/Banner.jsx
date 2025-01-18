@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Carousel } from 'react-bootstrap';
+import { FaBed, FaUsers, FaSearch } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import './css/Banner.css';
 
@@ -8,9 +9,7 @@ const Banner = ({ onSearch }) => {
   const [searchParams, setSearchParams] = useState({
     type: '',
     priceRange: '',
-    guests: '',
-    checkIn: '',
-    checkOut: ''
+    guests: ''
   });
 
   const handleSearch = (e) => {
@@ -72,7 +71,7 @@ const Banner = ({ onSearch }) => {
           <form className="search-form" onSubmit={handleSearch}>
             <div className="search-group">
               <label>
-                <i className="bi bi-building"></i>
+                <FaBed className="icon" />
                 Room Type
               </label>
               <select 
@@ -89,8 +88,8 @@ const Banner = ({ onSearch }) => {
 
             <div className="search-group">
               <label>
-                <i className="bi bi-currency-dollar"></i>
-                Price
+                <FaSearch className="icon" />
+                Price Range
               </label>
               <select 
                 className="search-input"
@@ -98,16 +97,16 @@ const Banner = ({ onSearch }) => {
                 onChange={(e) => setSearchParams(prev => ({...prev, priceRange: e.target.value}))}
               >
                 <option value="">Any Price</option>
-                <option value="0-1000">Under Rs. 1000</option>
-                <option value="1000-2000">Rs. 1000 - 2000</option>
+                <option value="0-2000">Under Rs. 2000</option>
                 <option value="2000-5000">Rs. 2000 - 5000</option>
-                <option value="5000+">Above Rs. 5000</option>
+                <option value="5000-10000">Rs. 5000 - 10000</option>
+                <option value="10000-999999">Rs. 10000+</option>
               </select>
             </div>
 
             <div className="search-group">
               <label>
-                <i className="bi bi-people"></i>
+                <FaUsers className="icon" />
                 Guests
               </label>
               <select 
@@ -115,17 +114,16 @@ const Banner = ({ onSearch }) => {
                 value={searchParams.guests}
                 onChange={(e) => setSearchParams(prev => ({...prev, guests: e.target.value}))}
               >
-                <option value="">Select</option>
+                <option value="">Any Number</option>
                 <option value="1">1 Guest</option>
                 <option value="2">2 Guests</option>
                 <option value="3">3 Guests</option>
-                <option value="4">4 Guests</option>
-                <option value="5+">5+ Guests</option>
+                <option value="4">4+ Guests</option>
               </select>
             </div>
 
             <button type="submit" className="search-button">
-              <i className="bi bi-search me-2"></i>
+              <FaSearch className="icon" />
               Search
             </button>
           </form>
