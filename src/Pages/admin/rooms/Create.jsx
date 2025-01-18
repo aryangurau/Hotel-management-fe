@@ -47,9 +47,9 @@ const AdminRoomCreate = () => {
     try {
       // Get current user and check token
       const currentUser = getCurrentUser();
-      const token = localStorage.getItem('access_token');
+      const token = sessionStorage.getItem('token');
 
-      if (!currentUser?._id || !token) {
+      if (!currentUser || !token) {
         toast.error('Your session has expired. Please login again.');
         navigate('/login', { state: { from: location } });
         return;
@@ -63,15 +63,6 @@ const AdminRoomCreate = () => {
         throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
       }
 
-      // Validate name
-      const name = formData.name?.trim();
-      if (!name) {
-        throw new Error('Room name is required');
-      }
-      if (name.length < 3) {
-        throw new Error('Room name must be at least 3 characters long');
-      }
-
       // Validate numeric fields
       const price = Number(formData.price);
       const totalGuests = Number(formData.totalGuests);
@@ -83,89 +74,44 @@ const AdminRoomCreate = () => {
         throw new Error('Total guests must be between 1 and 5');
       }
 
-      // Validate type
-      const validTypes = ['single', 'double', 'suite'];
-      if (!validTypes.includes(formData.type?.toLowerCase())) {
-        throw new Error('Invalid room type. Must be single, double, or suite');
-      }
+      // Create FormData
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name.trim());
+      formDataToSend.append('type', formData.type);
+      formDataToSend.append('price', price);
+      formDataToSend.append('totalGuests', totalGuests);
+      formDataToSend.append('description', formData.description || '');
+      formDataToSend.append('amenities', formData.amenities || '');
+      formDataToSend.append('status', 'empty');
 
-      // Handle images
-      if (!formData.images?.length) {
+      // Add images
+      if (formData.images?.length > 0) {
+        Array.from(formData.images).forEach(image => {
+          formDataToSend.append('images', image);
+        });
+      } else {
         throw new Error('Please select at least one image');
       }
 
-      // Create FormData
-      const formDataToSend = new FormData();
-
-      // Add required fields
-      formDataToSend.append('name', name);
-      formDataToSend.append('type', formData.type.toLowerCase());
-      formDataToSend.append('price', price);
-      formDataToSend.append('totalGuests', totalGuests);
-      formDataToSend.append('updated_by', currentUser._id);
-      formDataToSend.append('status', 'empty');
-
-      // Add optional fields
-      if (formData.description?.trim()) {
-        formDataToSend.append('description', formData.description.trim());
-      }
-
-      if (formData.amenities?.trim()) {
-        const amenitiesList = formData.amenities
-          .split(',')
-          .map(item => item.trim())
-          .filter(item => item);
-        formDataToSend.append('amenities', JSON.stringify(amenitiesList));
-      }
-
-      // Add images
-      Array.from(formData.images).forEach((image) => {
-        formDataToSend.append('images', image);
+      console.log('Submitting room data:', {
+        name: formData.name,
+        type: formData.type,
+        price,
+        totalGuests,
+        images: formData.images.length
       });
 
-      // Log the data being sent
-      const dataToLog = {};
-      for (let [key, value] of formDataToSend.entries()) {
-        if (key === 'images') {
-          dataToLog[key] = `${value.name} (${value.size} bytes)`;
-        } else {
-          dataToLog[key] = value;
-        }
-      }
-      console.log('Form data being sent:', dataToLog);
-
-      // Create room
-      const resultAction = await dispatch(createRoom(formDataToSend));
+      const response = await dispatch(createRoom(formDataToSend)).unwrap();
+      console.log('Room creation response:', response);
       
-      if (resultAction.error) {
-        const errorMsg = resultAction.error.message || 'Failed to create room';
-        
-        // Handle specific error cases
-        if (errorMsg.includes('jwt expired') || errorMsg.includes('TokenExpiredError')) {
-          toast.error('Your session has expired. Please login again.');
-          navigate('/login', { state: { from: location } });
-          return;
-        }
-        
-        if (errorMsg.includes('duplicate key error')) {
-          toast.error(`A room with this name already exists. Please choose a different name.`);
-        } else {
-          toast.error(errorMsg);
-        }
-      } else {
-        toast.success('Room created successfully!');
+      if (response?.data) {
+        toast.success(response.msg || 'Room created successfully!');
         navigate('/admin/rooms');
+      } else {
+        throw new Error('Failed to create room: No data returned');
       }
     } catch (error) {
       console.error('Error creating room:', error);
-      
-      // Handle token expiry in catch block
-      if (error.message?.includes('jwt expired') || error.message?.includes('TokenExpiredError')) {
-        toast.error('Your session has expired. Please login again.');
-        navigate('/login', { state: { from: location } });
-        return;
-      }
-      
       toast.error(error.message || 'Failed to create room');
     } finally {
       setLoading(false);

@@ -112,9 +112,9 @@ const AdminRooms = () => {
           <tbody>
             {loading && (
               <>
-                <TableLoader />
-                <TableLoader />
-                <TableLoader />
+                <TableLoader key="loader-1" />
+                <TableLoader key="loader-2" />
+                <TableLoader key="loader-3" />
               </>
             )}
 
@@ -154,11 +154,13 @@ const AdminRooms = () => {
                 </tr>
               ))
             ) : (
-              <tr>
-                <td colSpan="7" className="text-center">
-                  {loading ? "Loading..." : "No rooms found"}
-                </td>
-              </tr>
+              !loading && (
+                <tr>
+                  <td colSpan="7" className="text-center">
+                    No rooms found
+                  </td>
+                </tr>
+              )
             )}
           </tbody>
         </table>
