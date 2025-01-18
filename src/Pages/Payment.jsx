@@ -10,24 +10,28 @@ import { getToken } from "../Utils/session";
 import { getUserData } from '../Utils/getUserData';
 import PaymentConfirmationModal from "../components/PaymentConfirmationModal";
 import { removeItem } from "../slices/cartSlice";
+import moment from 'moment';
+import { toast } from 'react-toastify';
 
 const Payment = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const location = useLocation();
-  const { hotel, booking, totalPrice } = location.state || {};
+  const { hotel, dates } = location.state || {};
   const { paymentProcessing, paymentError, lastPaymentResult } = useSelector((state) => state.orders);
 
   const [showToast, setShowToast] = useState(false);
   const [toastVariant, setToastVariant] = useState('success');
   const [toastMessage, setToastMessage] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('credit_card');
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [formData, setFormData] = useState({
     cardNumber: '',
     expiryDate: '',
     cvv: '',
-    nameOnCard: ''
+    nameOnCard: '',
+    cardName: '',
+    phoneNumber: ''
   });
   const [errors, setErrors] = useState({});
 
@@ -43,10 +47,9 @@ const Payment = () => {
       console.log('No auth data found, redirecting to login');
       // Store current state before redirecting
       sessionStorage.setItem('pendingPayment', JSON.stringify({
-        booking,
         hotel,
-        totalPrice,
-        paymentMethod,
+        dates,
+        selectedPaymentMethod,
         formData
       }));
       navigate('/login', { 
@@ -59,48 +62,41 @@ const Payment = () => {
       return;
     }
 
-    // Validate required data
-    if (!hotel || !booking || !totalPrice) {
-      console.error('Missing required data:', { hotel, booking, totalPrice });
-      navigate('/');
+    // Validation on component mount
+    if (!hotel || !dates) {
+      toast.error('Missing booking information');
+      navigate('/hotels');
       return;
     }
 
-    if (!hotel._id || !hotel.name || !hotel.price) {
-      console.error('Invalid hotel data:', hotel);
-      navigate('/');
+    if (!dates.checkIn || !dates.checkOut) {
+      toast.error('Invalid booking dates');
+      navigate('/hotels');
       return;
     }
 
-    // Check hotel status if it exists
-    if (hotel.status && hotel.status !== 'empty') {
-      console.error('Hotel is not available:', hotel.status);
-      navigate('/');
+    // Validate dates
+    const checkIn = moment(dates.checkIn);
+    const checkOut = moment(dates.checkOut);
+    
+    if (!checkIn.isValid() || !checkOut.isValid()) {
+      toast.error('Invalid date format');
+      navigate('/hotels');
       return;
     }
 
-    if (!booking.checkIn || !booking.checkOut || !booking.rooms || !booking.guests) {
-      console.error('Invalid booking data:', booking);
-      navigate('/');
+    if (checkIn.isBefore(moment(), 'day')) {
+      toast.error('Check-in date cannot be in the past');
+      navigate('/hotels');
       return;
     }
 
-    const checkInDate = new Date(booking.checkIn);
-    const checkOutDate = new Date(booking.checkOut);
-    if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime()) || checkInDate >= checkOutDate) {
-      console.error('Invalid dates:', { checkIn: booking.checkIn, checkOut: booking.checkOut });
-      navigate('/');
+    if (checkOut.isSameOrBefore(checkIn)) {
+      toast.error('Check-out date must be after check-in date');
+      navigate('/hotels');
       return;
     }
-
-    const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-    const expectedPrice = parseFloat(hotel.price) * parseInt(booking.rooms) * nights;
-    if (Math.abs(expectedPrice - totalPrice) > 1) {
-      console.error('Price mismatch:', { expected: expectedPrice, actual: totalPrice });
-      navigate('/');
-      return;
-    }
-  }, [hotel, booking, totalPrice, navigate, location, dispatch]);
+  }, [hotel, dates, navigate]);
 
   useEffect(() => {
     // Handle payment result changes
@@ -114,13 +110,13 @@ const Payment = () => {
         setToastMessage(lastPaymentResult.error || 'Payment failed. Please try again.');
       }
     }
-  }, [lastPaymentResult, navigate]);
- 
+  }, [lastPaymentResult]);
+
   const validateForm = () => {
     const newErrors = {};
     
     // Only validate card details if using card payment
-    if (paymentMethod === 'credit_card' || paymentMethod === 'debit_card') {
+    if (selectedPaymentMethod === 'credit_card' || selectedPaymentMethod === 'debit_card') {
       if (!formData.cardNumber.match(/^\d{16}$/)) {
         newErrors.cardNumber = 'Please enter a valid 16-digit card number';
       }
@@ -167,7 +163,7 @@ const Payment = () => {
 
   const handlePayment = async () => {
     // Validate booking details first
-    if (!booking || !hotel || !totalPrice) {
+    if (!hotel || !dates) {
       setToastVariant('danger');
       setToastMessage('Invalid booking details');
       setShowToast(true);
@@ -175,7 +171,7 @@ const Payment = () => {
     }
 
     // Validate payment method
-    if (!paymentMethod) {
+    if (!selectedPaymentMethod) {
       setToastVariant('danger');
       setToastMessage('Please select a payment method');
       setShowToast(true);
@@ -183,7 +179,7 @@ const Payment = () => {
     }
 
     // Validate card details for card payments
-    if ((paymentMethod === 'credit_card' || paymentMethod === 'debit_card')) {
+    if ((selectedPaymentMethod === 'credit_card' || selectedPaymentMethod === 'debit_card')) {
       if (!validateForm()) {
         return;
       }
@@ -195,45 +191,66 @@ const Payment = () => {
 
   const handleConfirmPayment = async () => {
     try {
-      // Double check validation
-      if (!booking || !hotel || !totalPrice || !paymentMethod) {
-        throw new Error('Invalid booking or payment details');
+      // Validate order data
+      if (!hotel?._id) {
+        throw new Error('Invalid hotel information');
       }
 
-      // Get user data
-      const user = getUserData();
-      if (!user || !user.name || !user.email) {
-        throw new Error('User session expired');
-      }
+      // Log input data
+      console.log('Creating order with data:', {
+        hotel,
+        dates,
+        selectedPaymentMethod
+      });
 
-      // Create the order data
       const orderData = {
-        orderNo: Math.random().toString(36).substring(2, 15).toUpperCase(),
-        receiver: user.name,
-        arrivalDate: new Date(booking.checkIn).toISOString(),
-        departureDate: new Date(booking.checkOut).toISOString(),
-        room: hotel._id,
-        amount: parseFloat(totalPrice),
-        guests: parseInt(booking.guests) || 1,
-        rooms: parseInt(booking.rooms) || 1,
-        paymentMethod,
-        paymentDetails: {
-          cardLastFour: (paymentMethod === 'credit_card' || paymentMethod === 'debit_card') 
-            ? formData.cardNumber.slice(-4) 
-            : null,
-          paidAt: new Date().toISOString()
-        },
+        roomId: hotel._id,
+        checkIn: moment(dates.checkIn).format('YYYY-MM-DD'),
+        checkOut: moment(dates.checkOut).format('YYYY-MM-DD'),
+        guests: parseInt(dates.guests),
+        totalAmount: calculateTotalAmount(),
+        paymentMethod: selectedPaymentMethod,
+        guestName: formData.cardName || '',
+        phoneNumber: formData.phoneNumber || '',
         status: 'confirmed',
-        updated_by: user.email // This is required for user lookup
+        paymentDetails: {
+          method: selectedPaymentMethod,
+          status: 'paid',
+          paidAt: new Date().toISOString()
+        }
       };
 
-      // Log the order data before sending
-      console.log('Sending order data:', JSON.stringify(orderData, null, 2));
+      // Validate the order data
+      if (!orderData.totalAmount || orderData.totalAmount <= 0) {
+        throw new Error('Invalid total amount');
+      }
+      if (!orderData.guests || orderData.guests <= 0) {
+        throw new Error('Invalid number of guests');
+      }
+      if (!orderData.guestName) {
+        throw new Error('Guest name is required');
+      }
+      if (!orderData.phoneNumber) {
+        throw new Error('Phone number is required');
+      }
+
+      // Log the final payload
+      console.log('Sending order payload:', JSON.stringify(orderData, null, 2));
 
       // Create the order
       const result = await dispatch(createOrder(orderData)).unwrap();
       console.log('Order creation result:', result);
       
+      if (!result.success) {
+        if (result.error && result.error.code === 'ECONNABORTED') {
+          throw new Error('Connection timed out. Please try again.');
+        } else if (result.error && result.error.code === 'ECONNREFUSED') {
+          throw new Error('Failed to connect to server. Please try again.');
+        } else {
+          throw new Error(result.message || 'Order creation failed');
+        }
+      }
+
       // Show success message
       dispatch(paymentResult({ success: true }));
       // Remove the booked room from cart
@@ -241,98 +258,52 @@ const Payment = () => {
       setShowConfirmation(false);
       
       // Show toast and redirect
-      setToastVariant('success');
-      setToastMessage('Payment successful! Redirecting to your bookings...');
-      setShowToast(true);
-      
-      // Add a small delay before redirecting
+      toast.success('Payment successful! Redirecting to booking history...');
       setTimeout(() => {
-        navigate('/my-bookings', { replace: true });
+        navigate("/booking-history");
       }, 2000);
     } catch (error) {
-      console.error('Payment failed:', error);
-      setShowConfirmation(false);
+      console.error('Payment error:', {
+        message: error.message,
+        details: error.response?.data || error
+      });
       
-      // Check if it's an auth error
-      if (error?.response?.status === 401) {
-        // Show error toast
-        setToastVariant('danger');
-        setToastMessage('Your session has expired. Please log in again.');
-        setShowToast(true);
-        
-        // Store current state in sessionStorage for recovery
-        sessionStorage.setItem('pendingPayment', JSON.stringify({
-          booking,
-          hotel,
-          totalPrice,
-          paymentMethod,
-          formData
-        }));
-        
-        // Redirect to login after a short delay
-        setTimeout(() => {
-          navigate('/login', { 
-            replace: true,
-            state: { 
-              from: location.pathname,
-              returnTo: '/payment'
-            }
-          });
-        }, 2000);
-      } else {
-        // Show error toast for other errors
-        const errorMsg = error?.response?.data?.msg || error.message || 'Payment failed. Please try again.';
-        console.error('Payment error details:', error?.response?.data || error);
-        
-        setToastVariant('danger');
-        setToastMessage(errorMsg);
-        setShowToast(true);
-        
-        // Update redux state
+      if (error.response && error.response.status === 400) {
         dispatch(paymentResult({ 
           success: false, 
-          error: errorMsg 
+          error: error.response.data.message || 'Invalid request. Please try again.' 
+        }));
+      } else if (error.response && error.response.status === 401) {
+        dispatch(paymentResult({ 
+          success: false, 
+          error: error.response.data.message || 'Unauthorized. Please login to continue.' 
+        }));
+      } else if (error.response && error.response.status === 500) {
+        dispatch(paymentResult({ 
+          success: false, 
+          error: error.response.data.message || 'Internal server error. Please try again.' 
+        }));
+      } else {
+        dispatch(paymentResult({ 
+          success: false, 
+          error: error.message || 'Payment failed. Please try again.' 
         }));
       }
+      
+      toast.error(error.message || 'Payment failed. Please try again.');
+      setShowConfirmation(false);
     }
   };
 
-  useEffect(() => {
-    // Handle payment result changes
-    if (lastPaymentResult) {
-      setShowToast(true);
-      if (lastPaymentResult.success) {
-        setToastVariant('success');
-        setToastMessage('Payment successful! Redirecting to your bookings...');
-      } else {
-        setToastVariant('danger');
-        setToastMessage(lastPaymentResult.error || 'Payment failed. Please try again.');
-      }
-    }
-  }, [lastPaymentResult]);
+  const calculateTotalAmount = () => {
+    // Calculate total amount based on hotel price and dates
+    const checkIn = moment(dates.checkIn);
+    const checkOut = moment(dates.checkOut);
+    const nights = checkOut.diff(checkIn, 'days');
+    return hotel.price * nights;
+  };
 
-  useEffect(() => {
-    // Restore payment data after login
-    const pendingPayment = sessionStorage.getItem('pendingPayment');
-    if (pendingPayment) {
-      try {
-        const paymentData = JSON.parse(pendingPayment);
-        // Restore the payment data
-        if (paymentData.booking) booking = paymentData.booking;
-        if (paymentData.hotel) hotel = paymentData.hotel;
-        if (paymentData.totalPrice) totalPrice = paymentData.totalPrice;
-        if (paymentData.paymentMethod) setPaymentMethod(paymentData.paymentMethod);
-        if (paymentData.formData) setFormData(paymentData.formData);
-        // Clear the stored data
-        sessionStorage.removeItem('pendingPayment');
-      } catch (error) {
-        console.error('Error restoring payment data:', error);
-        sessionStorage.removeItem('pendingPayment');
-      }
-    }
-  }, []);
-
-  if (!hotel || !booking || !totalPrice) {
+  if (!hotel || !dates) {
     return null;
   }
 
@@ -350,13 +321,12 @@ const Payment = () => {
                 <Row>
                   <Col md={6}>
                     <p><strong>Hotel:</strong> {hotel?.name}</p>
-                    <p><strong>Check-in:</strong> {booking?.checkIn ? new Date(booking.checkIn).toLocaleDateString() : ''}</p>
-                    <p><strong>Check-out:</strong> {booking?.checkOut ? new Date(booking.checkOut).toLocaleDateString() : ''}</p>
+                    <p><strong>Check-in:</strong> {dates?.checkIn ? moment(dates.checkIn).format('YYYY-MM-DD') : ''}</p>
+                    <p><strong>Check-out:</strong> {dates?.checkOut ? moment(dates.checkOut).format('YYYY-MM-DD') : ''}</p>
                   </Col>
                   <Col md={6}>
-                    <p><strong>Rooms:</strong> {booking?.rooms}</p>
-                    <p><strong>Guests:</strong> {booking?.guests}</p>
-                    <p className="h5 text-primary">Total Amount: NPR {totalPrice}</p>
+                    <p><strong>Guests:</strong> {dates?.guests}</p>
+                    <p className="h5 text-primary">Total Amount: NPR {calculateTotalAmount()}</p>
                   </Col>
                 </Row>
               </div>
@@ -365,8 +335,8 @@ const Payment = () => {
                 <Form.Group className="mb-3">
                   <Form.Label>Payment Method</Form.Label>
                   <Form.Select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    value={selectedPaymentMethod}
+                    onChange={(e) => setSelectedPaymentMethod(e.target.value)}
                   >
                     <option value="credit_card">Credit Card</option>
                     <option value="debit_card">Debit Card</option>
@@ -375,7 +345,7 @@ const Payment = () => {
                   </Form.Select>
                 </Form.Group>
 
-                {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && (
+                {(selectedPaymentMethod === 'credit_card' || selectedPaymentMethod === 'debit_card') && (
                   <>
                     <Form.Group className="mb-3">
                       <Form.Label>Card Number</Form.Label>
@@ -441,12 +411,34 @@ const Payment = () => {
                         {errors.nameOnCard}
                       </Form.Control.Feedback>
                     </Form.Group>
+
+                    <Form.Group className="mb-3">
+                      <Form.Label>Card Holder Name</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="JOHN DOE"
+                        name="cardName"
+                        value={formData.cardName}
+                        onChange={handleInputChange}
+                      />
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                      <Form.Label>Phone Number</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="9801234567"
+                        name="phoneNumber"
+                        value={formData.phoneNumber}
+                        onChange={handleInputChange}
+                      />
+                    </Form.Group>
                   </>
                 )}
 
-                {(paymentMethod === 'esewa' || paymentMethod === 'khalti') && (
+                {(selectedPaymentMethod === 'esewa' || selectedPaymentMethod === 'khalti') && (
                   <Alert variant="info">
-                    Payment will be processed directly through {paymentMethod === 'esewa' ? 'eSewa' : 'Khalti'}.
+                    Payment will be processed directly through {selectedPaymentMethod === 'esewa' ? 'eSewa' : 'Khalti'}.
                   </Alert>
                 )}
 
@@ -457,7 +449,7 @@ const Payment = () => {
                     onClick={handlePayment}
                     disabled={paymentProcessing}
                   >
-                    {paymentProcessing ? 'Processing...' : `Pay NPR ${totalPrice}`}
+                    {paymentProcessing ? 'Processing...' : `Pay NPR ${calculateTotalAmount()}`}
                   </Button>
                 </div>
               </Form>
@@ -470,9 +462,8 @@ const Payment = () => {
             onConfirm={handleConfirmPayment}
             bookingDetails={{
               hotel,
-              booking,
-              totalPrice,
-              paymentMethod,
+              dates,
+              selectedPaymentMethod,
               cardLastFour: formData.cardNumber.slice(-4)
             }}
             loading={paymentProcessing}

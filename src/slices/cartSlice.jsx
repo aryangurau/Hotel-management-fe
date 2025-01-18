@@ -11,17 +11,16 @@ const cartSlice = createSlice({
   reducers: {
     addToCart: (state, action) => {
       const existingItem = state.cart.find(
-        (item) => item._id === action.payload._id || item.id === action.payload.id
+        (item) => item._id === action.payload._id
       );
       if (existingItem) {
         existingItem.quantity++;
         state.quantity++;
       } else {
-        // new item - ensure we have both id and _id
+        // new item - ensure we have _id
         const newItem = {
           ...action.payload,
-          id: action.payload.id || action.payload._id,
-          _id: action.payload._id || action.payload.id,
+          _id: action.payload._id,
           quantity: 1
         };
         state.cart.push(newItem);
@@ -30,7 +29,7 @@ const cartSlice = createSlice({
     },
     removeItem: (state, action) => {
       const newItems = state.cart.filter(
-        (item) => item._id !== action.payload && item.id !== action.payload
+        (item) => item._id !== action.payload
       );
       state.cart = newItems;
       state.quantity = newItems.reduce(
@@ -40,7 +39,7 @@ const cartSlice = createSlice({
     },
     increaseQuantity: (state, action) => {
       const existingItem = state.cart.find(
-        (item) => item._id === action.payload._id || item.id === action.payload.id
+        (item) => item._id === action.payload._id
       );
       if (existingItem) {
         existingItem.quantity++;
@@ -49,7 +48,7 @@ const cartSlice = createSlice({
     },
     decreaseQuantity: (state, action) => {
       const existingItem = state.cart.find(
-        (item) => item._id === action.payload._id || item.id === action.payload.id
+        (item) => item._id === action.payload._id
       );
       if (existingItem && existingItem.quantity > 1) {
         existingItem.quantity--;

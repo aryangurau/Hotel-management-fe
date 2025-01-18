@@ -98,15 +98,13 @@ const Cart = () => {
   const handlePaymentSuccess = async () => {
     try {
       const orderData = {
-        items: [{
-          roomId: selectedItem.id || selectedItem._id,
-          quantity: selectedItem.quantity || 1,
-          price: selectedItem.price,
-          checkIn: bookingData.checkIn,
-          checkOut: bookingData.checkOut,
-          guests: parseInt(bookingData.guests)
-        }],
+        roomId: selectedItem._id,  // Move roomId to root level
+        checkIn: bookingData.checkIn,
+        checkOut: bookingData.checkOut,
+        guests: parseInt(bookingData.guests),
         totalAmount: bookingData.totalAmount,
+        paymentMethod: "cash",
+        status: "confirmed",
         paymentDetails: {
           method: "cash",
           status: "paid",
@@ -114,12 +112,23 @@ const Cart = () => {
         }
       };
 
+      // Add validation
+      if (!selectedItem?._id) {
+        throw new Error('Room ID is missing');
+      }
+
+      console.log('Creating order with data:', {
+        selectedItem,
+        bookingData,
+        orderData
+      });
+
       // Create order first
       const result = await dispatch(createOrder(orderData)).unwrap();
       
       if (result) {
         // If order creation was successful, remove from cart
-        await dispatch(removeItem(selectedItem.id || selectedItem._id));
+        await dispatch(removeItem(selectedItem._id));
         
         // Store the name before clearing selectedItem
         const roomName = selectedItem.name;
@@ -171,8 +180,8 @@ const Cart = () => {
             <tbody>
               {cart.length > 0 ? (
                 cart.map((item) => (
-                  <tr key={item.id || item._id}>
-                    <td>{item.id || item._id}</td>
+                  <tr key={item._id}>
+                    <td>{item._id}</td>
                     <td>{item.name}</td>
                     <td>{item.price}</td>
                     <td>{item.totalGuests}</td>
@@ -180,7 +189,7 @@ const Cart = () => {
                       <span
                         className="btn btn-sm btn-danger m-1"
                         onClick={() =>
-                          dispatch(decreaseQuantity({ id: item.id || item._id }))
+                          dispatch(decreaseQuantity({ id: item._id }))
                         }
                       >
                         -
@@ -189,7 +198,7 @@ const Cart = () => {
                       <span
                         className="btn btn-sm btn-danger m-1"
                         onClick={() =>
-                          dispatch(increaseQuantity({ id: item.id || item._id }))
+                          dispatch(increaseQuantity({ id: item._id }))
                         }
                       >
                         +
@@ -206,7 +215,7 @@ const Cart = () => {
                         </button>
                         <span
                           className="btn btn-sm btn-danger"
-                          onClick={() => dispatch(removeItem(item.id || item._id))}
+                          onClick={() => dispatch(removeItem(item._id))}
                         >
                           <FaTrashAlt size="1rem" />
                         </span>

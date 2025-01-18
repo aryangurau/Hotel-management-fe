@@ -25,13 +25,19 @@ export const createOrder = createAsyncThunk(
       // Create order with user email as updated_by
       const order = {
         ...orderData,
-        updated_by: user.email,
+        roomId: orderData.roomId,  // Ensure roomId is at the root level
         status: 'confirmed',
         paymentDetails: {
-          ...orderData.paymentDetails,
+          method: orderData.paymentMethod,
+          status: 'paid',
           paidAt: new Date().toISOString()
         }
       };
+
+      // Validate required fields
+      if (!order.roomId) {
+        throw new Error('Room ID is required');
+      }
 
       console.log('Sending booking to API:', JSON.stringify(order, null, 2));
       
