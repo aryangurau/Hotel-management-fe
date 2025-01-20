@@ -10,151 +10,98 @@ import {
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import Image from 'react-bootstrap/Image';
-import logo from "../assets/img/logo3.jpg"
+import logo from "../assets/img/logo3.jpg";
+import Map from '../Components/Map';
+import '../styles/footer.css';
 
 const UserFooter = () => {
   return (
-    <div>
-      {/* Remove the container if you want to extend the Footer to full width. */}
-      <footer
-        className="text-white text-center text-lg-start"
-        style={{ backgroundColor: "#003B95" }}
-      >
-        {/* Grid container */}
-        <div className="container p-4">
-          {/*Grid row*/}
-          <div className="row mt-4">
-            {/*Grid column*/}
-            <div className="col-lg-4 col-md-12 mb-4 mb-md-0">
-              <Image src={logo} width={60} height={60} roundedCircle />
-              <h5 className="text-uppercase mb-4">About Us</h5>
-              <p>
+    <footer className="text-white" style={{ backgroundColor: "#003B95" }}>
+      <div className="container py-5">
+        <div className="row g-4">
+          {/* About Us Column */}
+          <div className="col-lg-4 col-md-6">
+            <div className="footer-section">
+              <div className="d-flex align-items-center mb-4">
+                <Image src={logo} width={60} height={60} roundedCircle className="me-3" />
+                <h5 className="text-uppercase mb-0">About Us</h5>
+              </div>
+              <p className="mb-3">
                 Welcome to XYZ Hotel, where luxury meets comfort. We are dedicated to providing exceptional hospitality services with a commitment to excellence in every stay.
               </p>
-              <p>
+              <p className="mb-4">
                 Our mission is to create memorable experiences for our guests through personalized service, elegant accommodations, and world-class amenities.
               </p>
-              <div className="mt-4 social-icons">
-                {/* Facebook */}
-                <Link to="/" target="_blank"
-                  type="button"
-                  className="btn btn-floating btn-warning btn-lg mx-2"
-                >
+              <div className="social-icons">
+                <Link to="/" target="_blank" className="btn btn-floating btn-warning btn-lg me-2">
                   <FaFacebookF size={20} />
                 </Link>
-                {/* Twitter */}
-                <Link to="/" target="_blank"
-                  type="button"
-                  className="btn btn-floating btn-warning btn-lg mx-2"
-                >
+                <Link to="/" target="_blank" className="btn btn-floating btn-warning btn-lg me-2">
                   <FaTwitter size={20} />
                 </Link>
-                {/* Google Plus */}
-                <Link to="/" target="_blank"
-                  type="button"
-                  className="btn btn-floating btn-warning btn-lg mx-2"
-                >
+                <Link to="/" target="_blank" className="btn btn-floating btn-warning btn-lg me-2">
                   <FaGooglePlusG size={22} />
                 </Link>
-                {/* Instagram */}
-                <Link to="/" target="_blank"
-                  type="button"
-                  className="btn btn-floating btn-warning btn-lg mx-2"
-                >
+                <Link to="/" target="_blank" className="btn btn-floating btn-warning btn-lg">
                   <FaInstagram size={20} />
                 </Link>
               </div>
             </div>
-            {/*Grid column*/}
-            {/*Grid column*/}
-            <div className="col-lg-4 col-md-6 mb-4 mb-md-0">
-              <h5 className="text-uppercase mb-4 pb-1">Search something</h5>
-              <div className="form-outline form-white mb-4">
-                <input
-                  type="text"
-                  id="formControlLg"
-                  className="form-control form-control-lg"
-                />
-                <label
-                  className="form-label"
-                  htmlFor="formControlLg"
-                  style={{ marginLeft: 0 }}
-                >
-                  Search
-                </label>
-                <div className="form-notch">
-                  <div className="form-notch-leading" style={{ width: 9 }} />
-                  <div className="form-notch-middle" style={{ width: "48.8px" }} />
-                  <div className="form-notch-trailing" />
-                </div>
-              </div>
-              <ul className="fa-ul" style={{ marginLeft: "1.65em" }}>
+          </div>
+
+          {/* Contact Info Column */}
+          <div className="col-lg-4 col-md-6">
+            <div className="footer-section">
+              <h5 className="text-uppercase mb-4">Contact Us</h5>
+              <ul className="list-unstyled mb-0">
                 <li className="mb-3">
-                  <span className="fa-li">
-                    <i className="fas fa-home" />
-                  </span>
-                  <span className="ms-2">New York, NY 10012, US</span>
+                  <div className="d-flex align-items-center">
+                    <FaHome className="me-3 flex-shrink-0" size={20} />
+                    <span>123 Hotel Street, Kathmandu, Nepal</span>
+                  </div>
                 </li>
                 <li className="mb-3">
-                  <span className="fa-li">
-                    <i className="fas fa-envelope" />
-                  </span>
-                  <span className="ms-2">info@example.com</span>
+                  <div className="d-flex align-items-center">
+                    <FaEnvelope className="me-3 flex-shrink-0" size={20} />
+                    <span>info@xyzhotel.com</span>
+                  </div>
                 </li>
                 <li className="mb-3">
-                  <span className="fa-li">
-                    <i className="fas fa-phone" />
-                  </span>
-                  <span className="ms-2">+ 01 234 567 88</span>
+                  <div className="d-flex align-items-center">
+                    <FaPhone className="me-3 flex-shrink-0" size={20} />
+                    <span>+ 977 234 567 88</span>
+                  </div>
                 </li>
                 <li className="mb-3">
-                  <span className="fa-li">
-                    <i className="fas fa-print" />
-                  </span>
-                  <span className="ms-2">+ 01 234 567 89</span>
+                  <div className="d-flex align-items-center">
+                    <FaPrint className="me-3 flex-shrink-0" size={20} />
+                    <span>+ 977 234 567 89</span>
+                  </div>
                 </li>
               </ul>
             </div>
-            {/*Grid column*/}
-            {/*Grid column*/}
-            <div className="col-lg-4 col-md-6 mb-4 mb-md-0">
-              <h5 className="text-uppercase mb-4">Opening hours</h5>
-              <table className="table text-center text-white">
-                <tbody className="font-weight-normal">
-                  <tr>
-                    <td>Mon - Thu:</td>
-                    <td>8am - 9pm</td>
-                  </tr>
-                  <tr>
-                    <td>Fri - Sat:</td>
-                    <td>8am - 1am</td>
-                  </tr>
-                  <tr>
-                    <td>Sunday:</td>
-                    <td>9am - 10pm</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            {/*Grid column*/}
           </div>
-          {/*Grid row*/}
+
+          {/* Map Column */}
+          <div className="col-lg-4 col-md-12">
+            <div className="footer-section">
+              <h5 className="text-uppercase mb-4">Location</h5>
+              <div className="footer-map">
+                <Map />
+              </div>
+            </div>
+          </div>
         </div>
-        {/* Grid container */}
-        {/* Copyright */}
-        <div
-          className="text-center p-3"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.2)" }}
-        >
-          2024 Copyright:
-          <Link className="text-white" to="https://github.com/aryangurau/Hotel-management-fe" target="_blank">
-            XYZ hotel
-          </Link>
-        </div>
-        {/* Copyright */}
-      </footer>
-      {/* End of .container */}
-    </div>
+      </div>
+
+      {/* Copyright */}
+      <div className="text-center py-3" style={{ backgroundColor: "rgba(0, 0, 0, 0.2)" }}>
+        {new Date().getFullYear()} Copyright:{" "}
+        <a className="text-white text-decoration-none" href="/">
+          XYZ Hotel
+        </a>
+      </div>
+    </footer>
   );
 };
 

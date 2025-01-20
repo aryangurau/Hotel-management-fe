@@ -11,8 +11,10 @@ import { addToCart } from '../slices/cartSlice';
 import { toast } from 'react-toastify';
 import Banner from '../components/Banner';
 import Payment from '../Components/Payment';
+import Map from '../Components/Map';
 import './css/home.css';
 import './css/modal.css';
+import '../styles/map.css';
 import moment from 'moment';
 import { getCurrentUser } from '../Utils/session';
 import { createOrder } from '../slices/orderSlice';
@@ -434,6 +436,26 @@ const Home = () => {
         )}
       </Container>
 </div>
+
+      {/* Featured Rooms Section */}
+      <section className="mb-5">
+        <h2 className="text-center mb-4">Featured Rooms</h2>
+        {/* Add featured rooms content here */}
+      </section>
+
+      {/* Location Section */}
+      <section className="mb-5">
+        <h2 className="text-center mb-4">Our Location</h2>
+        <Row className="justify-content-center">
+          <Col md={8} lg={6}>
+            <Map />
+          </Col>
+        </Row>
+      </section>
+
+      {/* Testimonials Section */}
+      {/* Add testimonials content here */}
+
       {/* Room Details Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton>
