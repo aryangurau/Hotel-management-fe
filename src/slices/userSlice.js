@@ -66,6 +66,19 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
+// Delete User
+export const deleteUser = createAsyncThunk(
+  'user/deleteUser',
+  async (userId, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.delete(`${URLS.USERS}/${userId}`, config);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.msg || 'Failed to delete user');
+    }
+  }
+);
+
 const userSlice = createSlice({
   name: "users",
   initialState: {
@@ -132,6 +145,20 @@ const userSlice = createSlice({
       .addCase(resetPassword.rejected, (state, action) => {
         state.actionLoading = false;
         state.actionError = action.error.message;
+      })
+      // Delete user cases
+      .addCase(deleteUser.pending, (state) => {
+        state.actionLoading = true;
+        state.actionError = null;
+      })
+      .addCase(deleteUser.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        state.users = state.users.filter(user => user._id !== action.meta.arg);
+        state.totalUsers = state.totalUsers - 1;
+      })
+      .addCase(deleteUser.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.actionError = action.payload;
       });
   },
 });

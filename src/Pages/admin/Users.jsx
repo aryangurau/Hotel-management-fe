@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Card, Table, Badge, Button, Form, Row, Col, Modal, Spinner } from "react-bootstrap";
-import { listUsers, blockUser, resetPassword, clearActionError } from "../../slices/userSlice";
+import { listUsers, blockUser, resetPassword, clearActionError, deleteUser } from "../../slices/userSlice";
 import { getCurrentUser } from "../../Utils/session";
 import { createSelector } from "@reduxjs/toolkit";
+import toast from 'react-hot-toast';
 
 // Memoized selector
 const selectUserState = createSelector(
@@ -30,6 +31,8 @@ const AdminUsers = () => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [newPassword, setNewPassword] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   const limit = 10;
 
   const loadUsers = useCallback(() => {
@@ -98,6 +101,18 @@ const AdminUsers = () => {
       setSelectedUser(null);
     } catch (err) {
       console.error("Failed to reset password:", err);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    try {
+      await dispatch(deleteUser(userToDelete._id)).unwrap();
+      toast.success('User deleted successfully');
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+      loadUsers();
+    } catch (error) {
+      toast.error(error || 'Failed to delete user');
     }
   };
 
@@ -212,6 +227,18 @@ const AdminUsers = () => {
                         >
                           Reset Password
                         </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="ms-2"
+                          onClick={() => {
+                            setUserToDelete(user);
+                            setShowDeleteModal(true);
+                          }}
+                          disabled={user.roles.includes('admin')}
+                        >
+                          Delete
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -267,6 +294,37 @@ const AdminUsers = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Delete User Modal */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Delete User</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Are you sure you want to delete user <strong>{userToDelete?.name}</strong>?</p>
+          <p className="text-danger">This action cannot be undone. All user data will be permanently deleted.</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={handleDeleteUser}
+            disabled={actionLoading}
+          >
+            {actionLoading ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Deleting...
+              </>
+            ) : (
+              'Delete User'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
     </div>
   );
 };
