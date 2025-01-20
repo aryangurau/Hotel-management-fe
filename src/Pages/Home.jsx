@@ -288,173 +288,170 @@ const Home = () => {
   };
 
   return (
-    <div className="home-container">
+    <div style={{ overflowX: 'hidden' }}>
       <Banner onSearch={handleSearch} />
       
       {/* Rooms Section */}
       <div className='available-rooms'>
-      <Container className=''>
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <h2>Available Rooms</h2>
-          {searchResults && (
-            <div>
-              <Button variant="outline-secondary" onClick={() => setSearchResults(null)} className="me-2">
-                Clear Search
-              </Button>
-              <span className="text-muted">
-                {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Category Navigation */}
-        <Nav
-          variant="pills" 
-          className="my-4 justify-content-center flex-wrap nav-booking "
-          activeKey={selectedCategory}
-          onSelect={(category) => setSelectedCategory(category)}
-        >
-          <Nav.Item>
-            <Nav.Link eventKey="all">All Rooms</Nav.Link>
-          </Nav.Item>
-          {Object.entries(ROOM_CATEGORIES).map(([key, value]) => (
-            <Nav.Item key={key}>
-              <Nav.Link eventKey={key}>{value}</Nav.Link>
-            </Nav.Item>
-          ))}
-        </Nav>
-
-        {/* Professional Notice */}
-        <div className="booking-notice mb-4">
-          <Alert variant="light" className="text-center border shadow-sm py-3">
-            <div className="d-flex align-items-center justify-content-center">
-              <div className="notice-icon me-3">
-                <FaShoppingCart size={24} className="text-primary" />
-              </div>
-              <div className="notice-content">
-                <h6 className="mb-1 fw-bold">Booking Process</h6>
-                <p className="mb-0 text-muted">
-                  To ensure a smooth booking experience, please add your desired rooms to the cart first.
-                </p>
-              </div>
-            </div>
-          </Alert>
-        </div>
-
-        {loading ? (
-          <div className="text-center my-5">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
-        ) : error ? (
-          <Alert variant="danger">{error}</Alert>
-        ) : currentRooms.length === 0 ? (
-          <div className="text-center my-5">
-            <h4>No rooms available at the moment</h4>
-            <p className="text-muted">Please check back later or try different filters</p>
-          </div>
-        ) : (
-          <>
-            <Row className="g-4">
-              {currentRooms.map((room, index) => (
-                <Col key={room._id || index} xs={12} md={6} lg={4}>
-                  <Card className="h-100 room-card">
-                    <Card.Header className="bg-transparent border-0 pt-3 px-3">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <h5 className="mb-0">{room.name}</h5>
-                        <span className="badge bg-primary">Rs. {room.price}/night</span>
-                      </div>
-                    </Card.Header>
-                    <Card.Body>
-                      <div className="room-image-container mb-3">
-                        <img
-                          className="w-100 room-image"
-                          src={getRoomImages(room.type)}
-                          alt={room.name}
-                        />
-                      </div>
-                      <div className="mb-3">
-                        <small className="text-muted">
-                          <FaUsers className="me-1" />
-                          Max Guests: {room.totalGuests} · 
-                          {getRoomTypeIcon(room.type)}
-                          Room Type: {room.type.charAt(0).toUpperCase() + room.type.slice(1)}
-                        </small>
-                      </div>
-                      <Card.Text>
-                        A comfortable {room.type} room with modern amenities, perfect for your stay.
-                      </Card.Text>
-                    </Card.Body>
-                    <Card.Footer className="bg-transparent">
-                      <div className="d-flex justify-content-between">
-                        <Button
-                          variant="outline-primary"
-                          onClick={() => handleShowDetails(room)}
-                        >
-                          Details
-                        </Button>
-                        <Button
-                          variant="primary"
-                          onClick={() => handleBookNow(room)}
-                          disabled={room.status !== 'empty'}
-                        >
-                          {room.status === 'empty' ? 'Book Now' : 'Not Available'}
-                        </Button>
-                        <Button
-                          variant="outline-success"
-                          onClick={() => handleAddToCart(room)}
-                          disabled={room.status !== 'empty'}
-                        >
-                          <FaShoppingCart />
-                        </Button>
-                      </div>
-                    </Card.Footer>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-
-            {/* Pagination */}
-            {pageNumbers.length > 1 && (
-              <div className="d-flex justify-content-center mt-4">
-                <Pagination>
-                  {pageNumbers.map((number) => (
-                    <Pagination.Item
-                      key={number}
-                      active={number === currentPage}
-                      onClick={() => handlePageChange(number)}
-                    >
-                      {number}
-                    </Pagination.Item>
-                  ))}
-                </Pagination>
+        <Container>
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h2>Available Rooms</h2>
+            {searchResults && (
+              <div>
+                <Button variant="outline-secondary" onClick={() => setSearchResults(null)} className="me-2">
+                  Clear Search
+                </Button>
+                <span className="text-muted">
+                  {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
+                </span>
               </div>
             )}
-          </>
-        )}
-      </Container>
-</div>
+          </div>
+
+          {/* Category Navigation */}
+          <Nav
+            variant="pills" 
+            className="my-4 justify-content-center flex-wrap nav-booking"
+            activeKey={selectedCategory}
+            onSelect={(category) => setSelectedCategory(category)}
+          >
+            <Nav.Item>
+              <Nav.Link eventKey="all">All Rooms</Nav.Link>
+            </Nav.Item>
+            {Object.entries(ROOM_CATEGORIES).map(([key, value]) => (
+              <Nav.Item key={key}>
+                <Nav.Link eventKey={key}>{value}</Nav.Link>
+              </Nav.Item>
+            ))}
+          </Nav>
+
+          {/* Professional Notice */}
+          <div className="booking-notice mb-4">
+            <Alert variant="light" className="text-center border shadow-sm py-3">
+              <div className="d-flex align-items-center justify-content-center">
+                <div className="notice-icon me-3">
+                  <FaShoppingCart size={24} className="text-primary" />
+                </div>
+                <div className="notice-content">
+                  <h6 className="mb-1 fw-bold">Booking Process</h6>
+                  <p className="mb-0 text-muted">
+                    To ensure a smooth booking experience, please add your desired rooms to the cart first.
+                  </p>
+                </div>
+              </div>
+            </Alert>
+          </div>
+
+          {loading ? (
+            <div className="text-center my-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          ) : error ? (
+            <Alert variant="danger">{error}</Alert>
+          ) : currentRooms.length === 0 ? (
+            <div className="text-center my-5">
+              <h4>No rooms available at the moment</h4>
+              <p className="text-muted">Please check back later or try different filters</p>
+            </div>
+          ) : (
+            <>
+              <Row>
+                {currentRooms.map((room, index) => (
+                  <Col key={room._id || index} xs={12} md={6} lg={4} className="mb-4">
+                    <Card className="h-100 room-card">
+                      <Card.Header className="bg-transparent border-0 pt-3 px-3">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <h5 className="mb-0">{room.name}</h5>
+                          <span className="badge bg-primary">Rs. {room.price}/night</span>
+                        </div>
+                      </Card.Header>
+                      <Card.Body>
+                        <div className="room-image-container mb-3">
+                          <img
+                            className="w-100 room-image"
+                            src={getRoomImages(room.type)}
+                            alt={room.name}
+                          />
+                        </div>
+                        <div className="mb-3">
+                          <small className="text-muted">
+                            <FaUsers className="me-1" />
+                            Max Guests: {room.totalGuests} · 
+                            {getRoomTypeIcon(room.type)}
+                            Room Type: {room.type.charAt(0).toUpperCase() + room.type.slice(1)}
+                          </small>
+                        </div>
+                        <Card.Text>
+                          A comfortable {room.type} room with modern amenities, perfect for your stay.
+                        </Card.Text>
+                      </Card.Body>
+                      <Card.Footer className="bg-transparent">
+                        <div className="d-flex justify-content-between">
+                          <Button
+                            variant="outline-primary"
+                            onClick={() => handleShowDetails(room)}
+                          >
+                            Details
+                          </Button>
+                          <Button
+                            variant="primary"
+                            onClick={() => handleBookNow(room)}
+                            disabled={room.status !== 'empty'}
+                          >
+                            {room.status === 'empty' ? 'Book Now' : 'Not Available'}
+                          </Button>
+                          <Button
+                            variant="outline-success"
+                            onClick={() => handleAddToCart(room)}
+                            disabled={room.status !== 'empty'}
+                          >
+                            <FaShoppingCart />
+                          </Button>
+                        </div>
+                      </Card.Footer>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+
+              {/* Pagination */}
+              {pageNumbers.length > 1 && (
+                <div className="d-flex justify-content-center mt-4">
+                  <Pagination>
+                    {pageNumbers.map((number) => (
+                      <Pagination.Item
+                        key={number}
+                        active={number === currentPage}
+                        onClick={() => handlePageChange(number)}
+                      >
+                        {number}
+                      </Pagination.Item>
+                    ))}
+                  </Pagination>
+                </div>
+              )}
+            </>
+          )}
+        </Container>
+      </div>
 
       {/* Featured Rooms Section */}
-      <section className="mb-5">
+      <Container className="mb-5">
         <h2 className="text-center mb-4">Featured Rooms</h2>
         {/* Add featured rooms content here */}
-      </section>
+      </Container>
 
       {/* Location Section */}
-      <section className="mb-5">
+      <Container className="mb-5">
         <h2 className="text-center mb-4">Our Location</h2>
         <Row className="justify-content-center">
           <Col md={8} lg={6}>
             <Map />
           </Col>
         </Row>
-      </section>
-
-      {/* Testimonials Section */}
-      {/* Add testimonials content here */}
+      </Container>
 
       {/* Room Details Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
