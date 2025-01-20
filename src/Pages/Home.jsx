@@ -323,6 +323,23 @@ const Home = () => {
           ))}
         </Nav>
 
+        {/* Professional Notice */}
+        <div className="booking-notice mb-4">
+          <Alert variant="light" className="text-center border shadow-sm py-3">
+            <div className="d-flex align-items-center justify-content-center">
+              <div className="notice-icon me-3">
+                <FaShoppingCart size={24} className="text-primary" />
+              </div>
+              <div className="notice-content">
+                <h6 className="mb-1 fw-bold">Booking Process</h6>
+                <p className="mb-0 text-muted">
+                  To ensure a smooth booking experience, please add your desired rooms to the cart first.
+                </p>
+              </div>
+            </div>
+          </Alert>
+        </div>
+
         {loading ? (
           <div className="text-center my-5">
             <div className="spinner-border text-primary" role="status">
