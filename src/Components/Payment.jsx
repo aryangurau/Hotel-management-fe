@@ -84,113 +84,17 @@ const Payment = ({ show, handleClose, selectedRoom, bookingDetails, onPaymentSuc
         throw new Error('Please select a payment method');
       }
 
-      // Validate booking details
-      if (!bookingDetails?.checkIn || !bookingDetails?.checkOut) {
-        throw new Error('Check-in and Check-out dates are required');
+      // Call the success callback with payment data
+      if (onPaymentSuccess) {
+        await onPaymentSuccess(paymentData);
       }
-      if (!bookingDetails?.guests || bookingDetails.guests <= 0) {
-        throw new Error('Number of guests must be greater than 0');
-      }
-
-      // Log the input data
-      console.log('Payment Data:', {
-        selectedRoom,
-        bookingDetails,
-        paymentData
-      });
-
-      // Validate selectedRoom first
-      if (!selectedRoom?._id) {
-        console.error('Selected room data:', selectedRoom);
-        throw new Error('Room ID is missing');
-      }
-
-      const checkIn = moment(bookingDetails.checkIn).format('YYYY-MM-DD');
-      const checkOut = moment(bookingDetails.checkOut).format('YYYY-MM-DD');
-
-      // Prepare booking payload
-      const bookingPayload = {
-        roomId: selectedRoom._id,  // Ensure this is at root level
-        checkIn,
-        checkOut,
-        guests: parseInt(bookingDetails.guests),
-        totalAmount: bookingDetails.totalAmount,
-        guestName: paymentData.guestName.trim(),
-        phoneNumber: paymentData.phoneNumber.trim(),
-        paymentMethod: paymentData.paymentMethod,
-        status: 'confirmed',
-        paymentDetails: {
-          method: paymentData.paymentMethod,
-          status: 'paid',
-          paidAt: new Date().toISOString()
-        }
-      };
-
-      // Detailed validation logging
-      console.log('Validation checks:', {
-        roomId: bookingPayload.roomId,
-        selectedRoomId: selectedRoom._id,
-        hasRoomId: !!bookingPayload.roomId,
-        hasCheckIn: !!bookingPayload.checkIn,
-        hasCheckOut: !!bookingPayload.checkOut,
-        guests: bookingPayload.guests,
-        totalAmount: bookingPayload.totalAmount,
-        hasGuestName: !!bookingPayload.guestName,
-        hasPhoneNumber: !!bookingPayload.phoneNumber,
-        paymentMethod: bookingPayload.paymentMethod
-      });
-
-      // Validate payload before sending
-      if (!bookingPayload.roomId) {
-        console.error('Missing room ID in payload:', bookingPayload);
-        throw new Error('Room ID is missing');
-      }
-      if (!bookingPayload.totalAmount || bookingPayload.totalAmount <= 0) {
-        throw new Error('Invalid total amount');
-      }
-      if (!bookingPayload.guestName) {
-        throw new Error('Guest name is required');
-      }
-      if (!bookingPayload.phoneNumber) {
-        throw new Error('Phone number is required');
-      }
-      if (!bookingPayload.guests || bookingPayload.guests <= 0) {
-        throw new Error('Number of guests is required');
-      }
-
-      console.log('Sending booking payload:', JSON.stringify(bookingPayload, null, 2));
-
-      // Make the API call
-      const response = await axiosInstance.post('/bookings', bookingPayload);
       
-      if (response.data.success) {
-        // Remove the booked room from cart
-        dispatch(removeItem(selectedRoom._id));
-        setIsProcessing(false);
-        toast.success('Booking confirmed successfully!');
-        
-        if (onPaymentSuccess) {
-          await onPaymentSuccess();
-        }
-        handleClose();
-        navigate('/booking-history');
-      } else {
-        throw new Error(response.data.message || 'Booking failed');
-      }
+      handleClose();
     } catch (error) {
       setIsProcessing(false);
-      const errorMessage = error.response?.data?.message || error.message || 'An error occurred during payment';
-      console.error('Detailed payment error:', {
-        error: error,
-        response: error.response?.data,
-        status: error.response?.status,
-        message: errorMessage
-      });
+      const errorMessage = error.message || 'An error occurred during payment';
       toast.error(errorMessage);
-      console.error('Payment error:', {
-        message: errorMessage,
-        details: error.response?.data || error
-      });
+      console.error('Payment error:', error);
     }
   };
 

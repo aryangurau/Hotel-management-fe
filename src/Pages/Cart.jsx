@@ -14,6 +14,7 @@ import {
 } from "../slices/cartSlice";
 import { createOrder } from "../slices/orderSlice";
 import Payment from '../components/Payment';
+import { getCurrentUser } from '../Utils/session';
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -95,18 +96,25 @@ const Cart = () => {
     handleShowBooking(item);
   };
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (paymentData) => {
     try {
+      const user = getCurrentUser();
+      if (!user || !user._id) {
+        throw new Error('Please login to make a booking');
+      }
+
       const orderData = {
-        roomId: selectedItem._id,  // Move roomId to root level
+        roomId: selectedItem._id,
+        userId: user._id,
         checkIn: bookingData.checkIn,
         checkOut: bookingData.checkOut,
         guests: parseInt(bookingData.guests),
         totalAmount: bookingData.totalAmount,
-        paymentMethod: "cash",
+        paymentMethod: paymentData.paymentMethod,
+        guestName: paymentData.guestName,
+        phoneNumber: paymentData.phoneNumber,
         status: "confirmed",
         paymentDetails: {
-          method: "cash",
           status: "paid",
           paidAt: new Date().toISOString()
         }
@@ -115,6 +123,10 @@ const Cart = () => {
       // Add validation
       if (!selectedItem?._id) {
         throw new Error('Room ID is missing');
+      }
+
+      if (!paymentData.guestName || !paymentData.phoneNumber) {
+        throw new Error('Guest name and phone number are required');
       }
 
       console.log('Creating order with data:', {

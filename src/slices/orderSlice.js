@@ -19,16 +19,21 @@ export const createOrder = createAsyncThunk(
   "orders/create",
   async (orderData, { rejectWithValue }) => {
     try {
-      // Get user data
+      // Get user data and token
       const user = getUserData();
+      const token = sessionStorage.getItem('token');
       
+      if (!user || !token) {
+        throw new Error('Please login to make a booking');
+      }
+
       // Create order with user email as updated_by
       const order = {
         ...orderData,
-        roomId: orderData.roomId,  // Ensure roomId is at the root level
+        roomId: orderData.roomId,
         status: 'confirmed',
+        paymentMethod: orderData.paymentMethod,
         paymentDetails: {
-          method: orderData.paymentMethod,
           status: 'paid',
           paidAt: new Date().toISOString()
         }
@@ -41,7 +46,13 @@ export const createOrder = createAsyncThunk(
 
       console.log('Sending booking to API:', JSON.stringify(order, null, 2));
       
-      const response = await axiosInstance.post(URLS.BOOKINGS, order);
+      // Include auth token in request headers
+      const response = await axiosInstance.post(URLS.BOOKINGS, order, {
+        headers: {
+          'access_token': token
+        }
+      });
+      
       console.log('API Response:', response.data);
       
       if (response.data?.data) {

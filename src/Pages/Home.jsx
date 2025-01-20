@@ -14,6 +14,8 @@ import Payment from '../Components/Payment';
 import './css/home.css';
 import './css/modal.css';
 import moment from 'moment';
+import { getCurrentUser } from '../Utils/session';
+import { createOrder } from '../slices/orderSlice';
 
 const ROOM_CATEGORIES = {
   SINGLE: "Single Rooms",
@@ -161,12 +163,47 @@ const Home = () => {
     setShowPaymentModal(true);
   };
 
-  const handlePaymentSuccess = () => {
-    // Reset all modals and show success message
-    setShowPaymentModal(false);
-    setSelectedRoom(null);
-    resetBookingData();
-    toast.success('Booking confirmed successfully!');
+  const handlePaymentSuccess = async (paymentData) => {
+    try {
+      const user = getCurrentUser();
+      if (!user || !user._id) {
+        throw new Error('Please login to make a booking');
+      }
+
+      const orderData = {
+        roomId: selectedRoom._id,
+        userId: user._id,
+        checkIn: bookingData.checkIn,
+        checkOut: bookingData.checkOut,
+        guests: parseInt(bookingData.guests),
+        totalAmount: bookingData.totalAmount,
+        paymentMethod: paymentData.paymentMethod,
+        guestName: paymentData.guestName,
+        phoneNumber: paymentData.phoneNumber,
+        status: "confirmed",
+        paymentDetails: {
+          status: "paid",
+          paidAt: new Date().toISOString()
+        }
+      };
+
+      // Create the booking
+      const result = await dispatch(createOrder(orderData)).unwrap();
+      
+      if (result) {
+        toast.success('Booking confirmed successfully!');
+        resetBookingData();
+        setShowPaymentModal(false);
+        setSelectedRoom(null);
+        navigate('/booking-history');
+      } else {
+        throw new Error('Failed to create booking');
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      toast.error(error.message || 'Failed to create booking');
+      setShowPaymentModal(false);
+    }
   };
 
   const handleSearch = (searchParams) => {
@@ -447,13 +484,7 @@ const Home = () => {
         amount={bookingData.totalAmount}
         selectedRoom={selectedRoom}
         bookingDetails={bookingData}
-        onPaymentSuccess={() => {
-          toast.success('Booking confirmed successfully!');
-          resetBookingData();
-          setShowPaymentModal(false);
-          setSelectedRoom(null);
-          navigate('/booking-history');
-        }}
+        onPaymentSuccess={handlePaymentSuccess}
       />
 
       {/* Booking Modal */}
