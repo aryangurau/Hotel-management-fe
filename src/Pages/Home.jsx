@@ -23,16 +23,19 @@ const ROOM_CATEGORIES = {
 
 const ROOM_IMAGES = {
   single: [
-    "https://images.unsplash.com/photo-1631049307264-da0ec9d70304",
-    "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf"
+    'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+    'https://images.unsplash.com/photo-1505693314120-0d443867891c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1471&q=80',
+    'https://images.unsplash.com/photo-1618773928121-c32242e63f39?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80'
   ],
   double: [
-    "https://images.unsplash.com/photo-1590490360182-c33d57733427",
-    "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf"
+    'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1474&q=80',
+    'https://images.unsplash.com/photo-1590490360182-c33d57733427?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1474&q=80',
+    'https://images.unsplash.com/photo-1566665797739-1674de7a421a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1474&q=80'
   ],
   suite: [
-    "https://images.unsplash.com/photo-1578683010236-d716f9a3f461",
-    "https://images.unsplash.com/photo-1631049552057-403cdb8f0658"
+    'https://images.unsplash.com/photo-1631049552057-403cdb8f0658?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+    'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+    'https://images.unsplash.com/photo-1629140727571-9b5c6f6267b4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80'
   ]
 };
 
@@ -240,7 +243,9 @@ const Home = () => {
   };
 
   const getRoomImages = (type) => {
-    return ROOM_IMAGES[type.toLowerCase()] || ROOM_IMAGES.single;
+    const images = ROOM_IMAGES[type.toLowerCase()] || ROOM_IMAGES.single;
+    const randomIndex = Math.floor(Math.random() * images.length);
+    return images[randomIndex];
   };
 
   return (
@@ -310,7 +315,7 @@ const Home = () => {
                       <div className="room-image-container mb-3">
                         <img
                           className="w-100 room-image"
-                          src={getRoomImages(room.type)[0]}
+                          src={getRoomImages(room.type)}
                           alt={room.name}
                         />
                       </div>
@@ -386,7 +391,7 @@ const Home = () => {
               <div className="room-image-container mb-4">
                 <img
                   className="w-100 room-image"
-                  src={getRoomImages(selectedRoom.type)[0]}
+                  src={getRoomImages(selectedRoom.type)}
                   alt={selectedRoom.name}
                 />
               </div>
